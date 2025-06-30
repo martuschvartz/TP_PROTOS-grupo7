@@ -36,7 +36,7 @@ sigterm_handler(const int signal) {
 }
 
 int
-main(const int argc, const char **argv) {
+mainExample(const int argc, const char **argv) {
     unsigned port = 1080;
 
     if(argc == 1) {

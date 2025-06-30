@@ -4,8 +4,7 @@
 #include <string.h>    /* memset */
 #include <errno.h>
 #include <getopt.h>
-
-#include "args.h"
+#include <args.h>
 
 static unsigned short
 port(const char* s)

@@ -1,0 +1,6 @@
+#include <stdio.h>
+
+int main(void){
+    printf("Hello, World! I am server\n");
+    return 0;
+}
