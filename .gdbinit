@@ -1,17 +1,3 @@
-target remote 172.19.149.173:1234
-add-symbol-file Kernel/kernel.elf 0x100000
-add-symbol-file Userland/0000-sampleCodeModule.elf 0x400000
-
-define src-prof
-    dashboard -layout source expressions stack variables
-    dashboard source -style height 20
-end
-
-define asm-prof
-    dashboard -layout registers assembly memory stack
-    dashboard registers -style list 'rax rbx rcx rdx rsi rdi rbp rsp r8 r9 r10 r11 r12 r13 r14 r15 rip eflags cs ss ds es fs gs fs_base gs_base k_gs_base cr0 cr2 cr3 cr4 cr8 efer'
-end
-
 python
 
 # GDB dashboard - Modular visual interface for GDB in Python.
@@ -20,7 +6,7 @@ python
 
 # License ----------------------------------------------------------------------
 
-# Copyright (c) 2015-2024 Andrea Cardaci <cyrus.and@gmail.com>
+# Copyright (c) 2015-2025 Andrea Cardaci <cyrus.and@gmail.com>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -2387,6 +2373,11 @@ set python print-stack full
 # Start ------------------------------------------------------------------------
 
 python Dashboard.start()
+
+# Fixes ------------------------------------------------------------------------
+
+# workaround for the GDB readline issue, see #325
+python import sys; sys.modules['readline'] = None
 
 # File variables ---------------------------------------------------------------
 
