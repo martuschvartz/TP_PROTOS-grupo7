@@ -3,160 +3,256 @@
 #include <selector.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h> 
+#include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#include <arpa/inet.h>
+#include <errno.h>
+
+#define MAX_CLIENTS 3
+#define BUFFER_SIZE 1024
 
 static bool done = false;
 
-struct data_info{
-    void * data;
-    int length;
-};
-
 static void
-sigterm_handler(const int signal) {
-    printf("signal %d, cleaning up and exiting\n",signal);
+sigterm_handler(const int signal)
+{
+    printf("signal %d, cleaning up and exiting\n", signal);
     done = true;
 }
 
-void
-echo_passive_read(struct selector_key *key){
-    struct data_info * dataInfo = key->data;
-    selector_set_interest(key->s, key->fd, OP_READ | OP_WRITE);
-    char buffer[1024];
-    int size = recv(key->fd, buffer, 1024, 0);
-    dataInfo->length = size;
-    memcpy(dataInfo->data,buffer, size);
+/*----------------- ECHO SERVER ------------------*/
+
+struct client_data
+{
+    char *data;
+    int length;
+};
+
+void echo_passive_read(struct selector_key *key){
+    puts("im readng");
+    struct client_data *client_data = (struct client_data *)(key)->data;
+    char buffer[BUFFER_SIZE];
+
+    int size = recv(key->fd, buffer, BUFFER_SIZE, 0);
+    if (size <= 0)
+    {
+        // handle EOF or error
+    }
+    memcpy(client_data->data, buffer, size);
+    client_data->length = size;
+    selector_set_interest(key->s, key->fd, OP_WRITE);
 }
 
-void
-echo_passive_write(struct selector_key *key){
-    struct data_info * dataInfo = key->data;
-    send(key->fd, dataInfo->data, dataInfo->length, 0);
+// non blocking send
+void echo_passive_write(struct selector_key *key)
+{
+    puts("im writing");
+    struct client_data *client_data = (struct client_data *)(key)->data;
+    send(key->fd, client_data->data, client_data->length, 0);
     selector_set_interest(key->s, key->fd, OP_READ);
 }
 
-void
-echo_passive_close(struct selector_key *key){
-    puts("bye!");
+void echo_passive_close(struct selector_key *key)
+{
+    struct client_data *client_data = key->data;
+
+    if (client_data != NULL) {
+        if (client_data->data != NULL) {
+            free(client_data->data);
+        }
+        free(client_data);
+    }
+
+    close(key->fd); 
 }
 
-void
-echo_passive_accept(struct selector_key *key) {
-    struct sockaddr_storage       client_addr;
-    socklen_t                     client_addr_len = sizeof(client_addr);
+// note, do free of client data
+void echo_passive_accept(struct selector_key *key)
+{
+    struct sockaddr_storage client_addr;
+    socklen_t client_addr_len = sizeof(client_addr);
 
-    const int client = accept(key->fd, (struct sockaddr*) &client_addr,
-                                                          &client_addr_len);
-    if(client == -1) {
+    const int client = accept(key->fd, (struct sockaddr *)&client_addr,
+                              &client_addr_len);
+    if (client == -1)
+    {
         return;
     }
-    if(selector_fd_set_nio(client) == -1) {
+    if (selector_fd_set_nio(client) == -1)
+    {
         return;
     }
 
     const struct fd_handler socksv5 = {
-        .handle_read       = echo_passive_read,
-        .handle_write      = echo_passive_write,
-        .handle_close      = echo_passive_close,
+        .handle_read = echo_passive_read,
+        .handle_write = echo_passive_write,
+        .handle_close = echo_passive_close,
     };
 
-    struct data_info * dataInfo = malloc(sizeof(struct data_info));
-    dataInfo->data = malloc(1024);
-    dataInfo->length = 0;
+    struct client_data *client_data = (struct client_data *)malloc(sizeof(client_data));
+    client_data->length = 0;
+    client_data->data = malloc(BUFFER_SIZE);
 
-    if(SELECTOR_SUCCESS != selector_register(key->s, client, &socksv5,
-                                              OP_READ, dataInfo)) {
+    if (SELECTOR_SUCCESS != selector_register(key->s, client, &socksv5,
+                                              OP_READ, client_data))
+    {
+        close(client);
         return;
     }
-    return ;
+    return;
 }
 
+/*-----------------------------------------------------------------*/
 
-int main(void){
-    int port = 8080;
-    signal(SIGTERM, sigterm_handler);
-    signal(SIGINT,  sigterm_handler);
-    
+// note, will throw error when passing addres -> inet_ptons
 
-    struct sockaddr_in addr;
-    memset(&addr, 0, sizeof(addr));
-    addr.sin_family      = AF_INET;
-    addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    addr.sin_port        = htons(port);
+/*
+ *  Sets server passive socket address, ipv4 format only
+ *  @param port, in which port it will listen
+ *  @param res_address, address structure result
+ *  @param res_address_length, address length result
+ *  returns 1 error, 0 on success
+ */
+int set_server_sock_address(int port, void *res_address, int *res_address_length)
+{
+    struct sockaddr_in sock_ipv4;
+    memset(&sock_ipv4, 0, sizeof(sock_ipv4));
+
+    sock_ipv4.sin_family = AF_INET;
+    sock_ipv4.sin_addr.s_addr = htonl(INADDR_ANY);
+    sock_ipv4.sin_port = htons(port);
+
+    *((struct sockaddr_in *)res_address) = sock_ipv4;
+    *res_address_length = sizeof(sock_ipv4);
+
+    return 0;
+}
+
+int main(void)
+{
+    int port = 1080;
+    selector_status selector_status = SELECTOR_SUCCESS;
+    const char *err_msg = NULL;
+    fd_selector selector = NULL;
+
+    struct sockaddr_storage server_addr;
+    int server_addr_len;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr_len = sizeof(server_addr);
+
+    if (set_server_sock_address(port, &server_addr, &server_addr_len))
+    {
+        err_msg = "Invalid server socket address";
+        goto finally;
+    }
 
     const int server = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if(server < 0) {
-        fprintf(stderr, "unable to create server socket :(");
-        return 1;
+    if (server < 0)
+    {
+        err_msg = "Unable to create server socket";
+        goto finally;
     }
 
-    if(selector_fd_set_nio(server)) {
-        fprintf(stderr, "unable to set non block on server socket :(");
-        return 1;
+    setsockopt(server, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
+
+    if (bind(server, (struct sockaddr *)&server_addr, server_addr_len) < 0)
+    {
+        err_msg = "Unable to bind socket";
+        goto finally;
     }
 
-    setsockopt(server, SOL_SOCKET, SO_REUSEADDR, &(int){ 1 }, sizeof(int));
-
-    if(bind(server, (struct sockaddr*) &addr, sizeof(addr)) < 0) {
-        fprintf(stderr, "unable to bind server socket :(");
-        return 1;
+    if (listen(server, MAX_CLIENTS) < 0)
+    {
+        err_msg = "Unable to listen";
+        goto finally;
     }
 
-    if (listen(server, 20) < 0) {
-        fprintf(stderr, "unable to listen server socket :(");
-        return 1;
-    }
+    fprintf(stdout, "Listenting on TCP port %d\n", port);
 
-    fprintf(stdout, "Listening on TCP port %d\n", port);
-    
+    signal(SIGTERM, sigterm_handler);
+    signal(SIGINT, sigterm_handler);
+
+    if (selector_fd_set_nio(server) == -1)
+    {
+        err_msg = "Unable to set server socket to nonblock";
+        goto finally;
+    }
     const struct selector_init conf = {
         .signal = SIGALRM,
         .select_timeout = {
-            .tv_sec  = 10,
+            .tv_sec = 10,
             .tv_nsec = 0,
         },
     };
-
-    if(selector_init(&conf)){
-        fprintf(stderr, "error initializing selector :(");
-        return 1;
+    if (0 != selector_init(&conf))
+    {
+        err_msg = "Unable to initialize selector";
+        goto finally;
     }
-
-    selector_status   ss      = SELECTOR_SUCCESS;
-    fd_selector selector      = NULL;
 
     selector = selector_new(1024);
-    if(selector == NULL) {
-        fprintf(stderr, "unable to create selector :(");
-        return 1;
+    if (selector == NULL)
+    {
+        err_msg = "unable to create selector";
+        goto finally;
     }
+
     const struct fd_handler socksv5 = {
-        .handle_read       = echo_passive_accept,
-        .handle_write      = NULL,
-        .handle_close      = NULL,
+        .handle_read = echo_passive_accept,
+        .handle_write = NULL,
+        .handle_close = NULL,
     };
-    ss = selector_register(selector, server, &socksv5,
-                                              OP_READ, NULL);
-    if(ss != SELECTOR_SUCCESS) {
-        fprintf(stderr, "error registering fd :(");
-        return 1;
+
+    selector_status = selector_register(selector, server, &socksv5,
+                                        OP_READ, NULL);
+    if (selector_status != SELECTOR_SUCCESS)
+    {
+        err_msg = "Unable to register server socket";
+        goto finally;
     }
-    for(;!done;) {
-        ss = selector_select(selector);
-        if(ss != SELECTOR_SUCCESS) {
-            fprintf(stderr, "error serving :(");
-            return 1;
+    for (; !done;)
+    {
+        err_msg = NULL;
+        selector_status = selector_select(selector);
+        if (selector_status != SELECTOR_SUCCESS)
+        {
+            err_msg = "Serving";
+            goto finally;
         }
     }
 
-    selector_destroy(selector);
-    selector_close();
-
-    if(server >= 0) {
-        close(server);
+    if (err_msg == NULL)
+    {
+        err_msg = "Closing server";
     }
 
-    return 0;
+    int ret = 0;
+finally:
+    if (selector_status != SELECTOR_SUCCESS)
+    {
+        fprintf(stderr, "%s: %s\n", (err_msg == NULL) ? "" : err_msg,
+                selector_status == SELECTOR_IO
+                    ? strerror(errno)
+                    : selector_error(selector_status));
+        ret = 2;
+    }
+    else if (err_msg)
+    {
+        perror(err_msg);
+        ret = 1;
+    }
+    if (selector != NULL)
+    {
+        //selector_destroy(selector);
+    }
+    selector_close();
+
+    //socksv5_pool_destroy();
+
+    if (server >= 0)
+    {
+        close(server);
+    }
+    return ret;
 }
