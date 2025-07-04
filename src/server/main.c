@@ -11,6 +11,7 @@
 #include <errno.h>
 #include <buffer.h>
 
+
 #define MAX_CLIENTS 3
 #define BUFFER_SIZE 1024
 
@@ -55,11 +56,12 @@ void echo_passive_read(struct selector_key *key)
     selector_set_interest(key->s, key->fd, OP_WRITE);
 }
 
-// non blocking send
+// non blocking send ? i think not for now
 void echo_passive_write(struct selector_key *key)
 {
     puts("im writing");
     struct client_data *client_data = (struct client_data *)(key)->data;
+
     size_t available;
     uint8_t *ptr = buffer_read_ptr(&client_data->buffer, &available);
 
@@ -76,6 +78,7 @@ void echo_passive_write(struct selector_key *key)
     }
 
     buffer_read_adv(&client_data->buffer, n);
+    send(key->fd, client_data->data, client_data->length, 0);
     selector_set_interest(key->s, key->fd, OP_READ);
 }
 
@@ -110,6 +113,7 @@ void echo_passive_accept(struct selector_key *key)
         return;
     }
 
+
     struct client_data *client_data = calloc(1, sizeof(struct client_data));
     if (client_data == NULL)
     {
@@ -117,6 +121,7 @@ void echo_passive_accept(struct selector_key *key)
         return;
     }
     buffer_init(&client_data->buffer, BUFFER_SIZE, client_data->raw_buffer);
+
 
     if (SELECTOR_SUCCESS != selector_register(key->s, client, &socksv5,
                                               OP_READ, client_data))
