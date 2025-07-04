@@ -2,12 +2,14 @@
 #include <signal.h>
 #include <selector.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <errno.h>
+#include <buffer.h>
 
 #define MAX_CLIENTS 3
 #define BUFFER_SIZE 1024
@@ -25,22 +27,31 @@ sigterm_handler(const int signal)
 
 struct client_data
 {
-    char *data;
-    int length;
+    buffer buffer;
+    uint8_t raw_buffer[BUFFER_SIZE];
 };
 
-void echo_passive_read(struct selector_key *key){
+void echo_passive_read(struct selector_key *key)
+{
     puts("im readng");
     struct client_data *client_data = (struct client_data *)(key)->data;
-    char buffer[BUFFER_SIZE];
-
-    int size = recv(key->fd, buffer, BUFFER_SIZE, 0);
-    if (size <= 0)
-    {
-        // handle EOF or error
+    size_t available;
+    uint8_t *ptr = buffer_write_ptr(&client_data->buffer, &available);
+    if (!buffer_can_write(&client_data->buffer)) {
+        // buffer is full, drop or wait
+        return;
     }
-    memcpy(client_data->data, buffer, size);
-    client_data->length = size;
+
+    ssize_t n = recv(key->fd, ptr, available, 0);
+    printf("recv returned %zd\n", n);
+    if (n <= 0) {
+        printf("Client disconnected (fd=%d)\n", key->fd);
+        selector_unregister_fd(key->s, key->fd);
+        return;
+    }
+
+    printf("didn´t return\n");
+    buffer_write_adv(&client_data->buffer, n);
     selector_set_interest(key->s, key->fd, OP_WRITE);
 }
 
@@ -49,23 +60,38 @@ void echo_passive_write(struct selector_key *key)
 {
     puts("im writing");
     struct client_data *client_data = (struct client_data *)(key)->data;
-    send(key->fd, client_data->data, client_data->length, 0);
+    size_t available;
+    uint8_t *ptr = buffer_read_ptr(&client_data->buffer, &available);
+
+    if (!buffer_can_read(&client_data->buffer)) {
+        // Nothing to write
+        selector_set_interest(key->s, key->fd, OP_READ);
+        return;
+    }
+
+    ssize_t n = send(key->fd, ptr, available, 0);
+    if (n <= 0) {
+        selector_unregister_fd(key->s, key->fd);
+        return;
+    }
+
+    buffer_read_adv(&client_data->buffer, n);
     selector_set_interest(key->s, key->fd, OP_READ);
 }
 
 void echo_passive_close(struct selector_key *key)
 {
-    struct client_data *client_data = key->data;
-
-    if (client_data != NULL) {
-        if (client_data->data != NULL) {
-            free(client_data->data);
-        }
-        free(client_data);
-    }
-
-    close(key->fd); 
+    struct client_data *client_data = (struct client_data *)(key)->data;
+    free(client_data);
+    close(key->fd);
 }
+
+
+const struct fd_handler socksv5 = {
+        .handle_read = echo_passive_read,
+        .handle_write = echo_passive_write,
+        .handle_close = echo_passive_close,
+    };
 
 // note, do free of client data
 void echo_passive_accept(struct selector_key *key)
@@ -84,15 +110,13 @@ void echo_passive_accept(struct selector_key *key)
         return;
     }
 
-    const struct fd_handler socksv5 = {
-        .handle_read = echo_passive_read,
-        .handle_write = echo_passive_write,
-        .handle_close = echo_passive_close,
-    };
-
-    struct client_data *client_data = (struct client_data *)malloc(sizeof(client_data));
-    client_data->length = 0;
-    client_data->data = malloc(BUFFER_SIZE);
+    struct client_data *client_data = calloc(1, sizeof(struct client_data));
+    if (client_data == NULL)
+    {
+        close(client);
+        return;
+    }
+    buffer_init(&client_data->buffer, BUFFER_SIZE, client_data->raw_buffer);
 
     if (SELECTOR_SUCCESS != selector_register(key->s, client, &socksv5,
                                               OP_READ, client_data))
@@ -244,11 +268,11 @@ finally:
     }
     if (selector != NULL)
     {
-        //selector_destroy(selector);
+        // selector_destroy(selector);
     }
     selector_close();
 
-    //socksv5_pool_destroy();
+    // socksv5_pool_destroy();
 
     if (server >= 0)
     {
