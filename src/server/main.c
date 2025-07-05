@@ -11,7 +11,6 @@
 #include <errno.h>
 #include <buffer.h>
 
-
 #define MAX_CLIENTS 3
 #define BUFFER_SIZE 1024
 
@@ -38,14 +37,16 @@ void echo_passive_read(struct selector_key *key)
     struct client_data *client_data = (struct client_data *)(key)->data;
     size_t available;
     uint8_t *ptr = buffer_write_ptr(&client_data->buffer, &available);
-    if (!buffer_can_write(&client_data->buffer)) {
+    if (!buffer_can_write(&client_data->buffer))
+    {
         // buffer is full, drop or wait
         return;
     }
 
     ssize_t n = recv(key->fd, ptr, available, 0);
     printf("recv returned %zd\n", n);
-    if (n <= 0) {
+    if (n <= 0)
+    {
         printf("Client disconnected (fd=%d)\n", key->fd);
         selector_unregister_fd(key->s, key->fd);
         return;
@@ -65,20 +66,22 @@ void echo_passive_write(struct selector_key *key)
     size_t available;
     uint8_t *ptr = buffer_read_ptr(&client_data->buffer, &available);
 
-    if (!buffer_can_read(&client_data->buffer)) {
+    if (!buffer_can_read(&client_data->buffer))
+    {
         // Nothing to write
         selector_set_interest(key->s, key->fd, OP_READ);
         return;
     }
 
     ssize_t n = send(key->fd, ptr, available, 0);
-    if (n <= 0) {
+    if (n <= 0)
+    {
         selector_unregister_fd(key->s, key->fd);
         return;
     }
 
     buffer_read_adv(&client_data->buffer, n);
-    send(key->fd, client_data->data, client_data->length, 0);
+    send(key->fd, client_data->raw_buffer, BUFFER_SIZE, 0);
     selector_set_interest(key->s, key->fd, OP_READ);
 }
 
@@ -89,12 +92,11 @@ void echo_passive_close(struct selector_key *key)
     close(key->fd);
 }
 
-
 const struct fd_handler socksv5 = {
-        .handle_read = echo_passive_read,
-        .handle_write = echo_passive_write,
-        .handle_close = echo_passive_close,
-    };
+    .handle_read = echo_passive_read,
+    .handle_write = echo_passive_write,
+    .handle_close = echo_passive_close,
+};
 
 // note, do free of client data
 void echo_passive_accept(struct selector_key *key)
@@ -113,7 +115,6 @@ void echo_passive_accept(struct selector_key *key)
         return;
     }
 
-
     struct client_data *client_data = calloc(1, sizeof(struct client_data));
     if (client_data == NULL)
     {
@@ -121,7 +122,6 @@ void echo_passive_accept(struct selector_key *key)
         return;
     }
     buffer_init(&client_data->buffer, BUFFER_SIZE, client_data->raw_buffer);
-
 
     if (SELECTOR_SUCCESS != selector_register(key->s, client, &socksv5,
                                               OP_READ, client_data))
