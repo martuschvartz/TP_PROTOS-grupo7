@@ -3,6 +3,7 @@
 
 #include <sys/time.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
 /**
  * selector.c - un muliplexor de entrada salida
@@ -111,14 +112,14 @@ typedef enum {
 /**
  * Argumento de todas las funciones callback del handler
  */
-struct selector_key {
+typedef struct selector_key {
     /** el selector que dispara el evento */
     fd_selector s;
     /** el file descriptor en cuestión */
     int         fd;
     /** dato provisto por el usuario */
     void *      data;
-};
+}selector_key;
 
 /**
  * Manejador de los diferentes eventos..

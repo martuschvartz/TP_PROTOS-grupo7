@@ -51,8 +51,6 @@ enum socks_v5state {
      */
     HELLO_WRITE,
 
-…
-
     // estados terminales
     DONE,
     ERROR,
@@ -70,7 +68,6 @@ struct hello_st {
     uint8_t               method;
 } ;
 
-…
 
 /*
  * Si bien cada estado tiene su propio struct que le da un alcance
@@ -81,7 +78,7 @@ struct hello_st {
  * liberarlo finalmente, y un pool para reusar alocaciones previas.
  */
 struct socks5 {
-…
+
     /** maquinas de estados */
     struct state_machine          stm;
 
@@ -278,8 +275,7 @@ static const struct state_definition client_statbl[] = {
         .on_departure     = hello_read_close,
         .on_read_ready    = hello_read,
     },
-…
-
+}
 ///////////////////////////////////////////////////////////////////////////////
 // Handlers top level de la conexión pasiva.
 // son los que emiten los eventos a la maquina de estados.
