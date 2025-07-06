@@ -1,3 +1,5 @@
 .vscode
 bin
 obj
+.gdb_history
+.idea

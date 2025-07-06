@@ -17,10 +17,8 @@
 
 static bool done = false;
 
-static void
-sigterm_handler(const int signal)
-{
-    printf("signal %d, cleaning up and exiting\n", signal);
+static void sigterm_handler(const int signal) {
+    printf("signal %d, cleaning up and exiting\n",signal);
     done = true;
 }
 
@@ -139,11 +137,6 @@ int main(void)
             err_msg = "Serving";
             goto finally;
         }
-    }
-
-    if (err_msg == NULL)
-    {
-        err_msg = "Closing server";
     }
 
     int ret = 0;
