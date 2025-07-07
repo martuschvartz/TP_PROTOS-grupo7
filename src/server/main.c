@@ -138,6 +138,11 @@ int main(void)
         }
     }
 
+    if (err_msg == NULL)
+    {
+        err_msg = "Closing server";
+    }
+
     int ret = 0;
 finally:
     if (selector_status != SELECTOR_SUCCESS)
@@ -159,7 +164,7 @@ finally:
     }
     selector_close();
 
-    //socksv5_pool_destroy();
+    // socksv5_pool_destroy();
 
     if (server >= 0)
     {
