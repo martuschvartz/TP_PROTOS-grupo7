@@ -146,8 +146,13 @@ int main(int argc, char** argv)
     //sirve tener el logger antes del parse para ya poder ir juntando datos
     struct socks5args socksArgs;
     initUsers();
+    socksArgs.cant++;//ya que cree el admin con la funcion initUsers
     parse_args(argc, argv, &socksArgs);
-    //init todos los usuarios TODO
+    for(int i=0; i< socksArgs.cant; i++){
+        newUser(socksArgs.users[i].name, socksArgs.users[i].pass);
+        fprintf(stdout, "Nuevo usuario %s : %s\n", socksArgs.users[i].name, socksArgs.users[i].pass);
+    }
+
 
     if (set_server_sock_address(socksArgs.socks_port, &server_addr, &server_addr_len))
     {
@@ -176,7 +181,7 @@ int main(int argc, char** argv)
         goto finally;
     }
 
-    fprintf(stdout, "Listenting on TCP port %d\n", socksArgs.socks_port);
+    fprintf(stdout, "Listening on TCP port %d\n", socksArgs.socks_port);
 
     signal(SIGTERM, sigterm_handler);
     signal(SIGINT, sigterm_handler);
@@ -257,7 +262,7 @@ finally:
     }
     selector_close();
 
-    socksv5_pool_destroy();
+    //socksv5_pool_destroy();
 
     if (server >= 0)
     {

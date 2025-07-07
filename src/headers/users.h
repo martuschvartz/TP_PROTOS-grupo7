@@ -11,6 +11,8 @@ typedef struct{
     int status;
 }user;
 
+static user* users; //lista de usuarios
+
 int newUser(const char* name, const char* pass);
 
 void changeStatus(const char* name, int newStatus);
@@ -20,6 +22,8 @@ int deleteUser(const char* name);
 int initUsers();
 
 int closeUsers();
+
+int userLogin(const char *name, const char *password);
 
 int userExists(const char* name);
 

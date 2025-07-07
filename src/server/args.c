@@ -133,6 +133,8 @@ parse_args(const int argc, char** argv, struct socks5args* args)
         default:
             fprintf(stderr, "unknown argument %d.\n", c);
             exit(1);
+        //TODO llamado a cambiar de contraseña
+        //TODO llamado a cambiar de status a algun usuario
         }
     }
     if (optind < argc)

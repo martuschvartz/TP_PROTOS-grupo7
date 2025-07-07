@@ -11,7 +11,9 @@ static user* users; //lista de usuarios
 int cantUsers=0, admins=0;
 
 int newUser(const char* name, const char* pass){
-    if(userExists(name)){
+    fprintf(stdout, "en new\n");
+
+    if(userExists(name)>=0){
         fprintf(stderr, "Username is already in use, please choose another name.\n");
         return -1;
     }
@@ -34,10 +36,12 @@ int newUser(const char* name, const char* pass){
 
 
 void changeStatus(const char* name, int newStatus){
+    fprintf(stderr, "en cahnge\n");
+
     int index = userExists(name);
     
     if(index<0){
-        fprintf(stderr, "This user does not exist.\n");
+        fprintf(stderr, "This user does not exist. C\n");
         return;
     }
 
@@ -57,10 +61,11 @@ void changeStatus(const char* name, int newStatus){
 }
 
 int deleteUser(const char* name){
+    fprintf(stderr, "en delete\n");
     int index = userExists(name);
 
     if(index<0){
-        fprintf(stderr, "This user does not exist.\n");
+        fprintf(stderr, "This user does not exist. D\n");
         return -1;
     }
 
@@ -92,7 +97,7 @@ int initUsers(){
 
     if(admins==0){
         fprintf(stderr, "No admins yet, creating admin with name: admin and password: admin\n");
-        newUser("admin", "admin");
+        //newUser("admin", "admin");
         changeStatus("admin", ADMIN);
     }
 
@@ -102,6 +107,20 @@ int initUsers(){
 int closeUsers(){
     free(users);
     return 0;
+}
+
+int userLogin(const char *name, const char *password) {
+    int index = userExists(name);
+    if (index == -1) {
+        return -1;  
+    }
+
+    //Check pass
+    if (strcmp(users[index].pass, password) == 0) {
+        return 0;   
+    }
+
+    return -1;      
 }
 
 int userExists(const char* name){
