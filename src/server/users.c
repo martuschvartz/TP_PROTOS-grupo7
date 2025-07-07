@@ -6,18 +6,17 @@
 #include <string.h>    /* memset */
 #include <errno.h>
 #include <getopt.h>
+#include "args.h"
 
 static user* users; //lista de usuarios
-int cantUsers=0, admins=0;
+static unsigned int cantUsers, admins;
 
 int newUser(const char* name, const char* pass){
-    fprintf(stdout, "en new\n");
 
     if(userExists(name)>=0){
         fprintf(stderr, "Username is already in use, please choose another name.\n");
         return -1;
     }
-
     if(cantUsers>=MAX_LENGTH){
         fprintf(stderr,"You have reached max amount of users, we cant create more %s\n", name);
         return -1;
@@ -27,16 +26,15 @@ int newUser(const char* name, const char* pass){
 
     strcpy(users[cantUsers].name, name);
     strcpy(users[cantUsers].pass, pass); 
-    users[cantUsers].status= COMMONER;   
+    users[cantUsers].status= COMMONER;  
     cantUsers++;
 
-    fprintf(stderr, "Created user %s\n", name);
+    fprintf(stdout, "Created user %s\n", name);
     return 0;
 }
 
 
 void changeStatus(const char* name, int newStatus){
-    fprintf(stderr, "en cahnge\n");
 
     int index = userExists(name);
     
@@ -89,15 +87,15 @@ int initUsers(){
     users=NULL;
     cantUsers=0;
 
-    users= malloc(MAX_LENGTH*sizeof(user)); //Podriamos crearlo chico y hacerlo crecer mientras q se agregan users TODO
-    if(users=NULL){
+    users= malloc(MAX_USERS*sizeof(user)); //Podriamos crearlo chico y haceSrlo crecer mientras q se agregan users TODO
+    if(users==NULL){
         fprintf(stderr, "Error in malloc for 'users' array\n");
         return-1;
     }
 
     if(admins==0){
         fprintf(stderr, "No admins yet, creating admin with name: admin and password: admin\n");
-        //newUser("admin", "admin");
+        newUser("admin", "admin");
         changeStatus("admin", ADMIN);
     }
 

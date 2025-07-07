@@ -32,7 +32,7 @@ struct client_data
 };
 
 void echo_passive_read(struct selector_key *key){
-    puts("im readng");
+    puts("im readng p");
     struct client_data *client_data = (struct client_data *)(key)->data;
     char buffer[BUFFER_SIZE];
 
@@ -49,7 +49,7 @@ void echo_passive_read(struct selector_key *key){
 // non blocking send
 void echo_passive_write(struct selector_key *key)
 {
-    puts("im writing");
+    puts("im writing p");
     struct client_data *client_data = (struct client_data *)(key)->data;
     send(key->fd, client_data->data, client_data->length, 0);
     selector_set_interest(key->s, key->fd, OP_READ);
@@ -152,7 +152,6 @@ int main(int argc, char** argv)
         newUser(socksArgs.users[i].name, socksArgs.users[i].pass);
         fprintf(stdout, "Nuevo usuario %s : %s\n", socksArgs.users[i].name, socksArgs.users[i].pass);
     }
-
 
     if (set_server_sock_address(socksArgs.socks_port, &server_addr, &server_addr_len))
     {
