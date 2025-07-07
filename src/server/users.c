@@ -17,11 +17,12 @@ int newUser(const char* name, const char* pass){
         fprintf(stderr, "Username is already in use, please choose another name.\n");
         return -1;
     }
-    if(cantUsers>=MAX_LENGTH){
-        fprintf(stderr,"You have reached max amount of users, we cant create more %s\n", name);
+    if(cantUsers>=MAX_USERS){
+        fprintf(stderr,"You have reached max amount of users, we cant create %s\n", name);
         return -1;
     }
 
+    fprintf(stdout, "aca?\n");
     //TODO no hacemos ningun chequeo de nivel de contraseña :)
 
     strcpy(users[cantUsers].name, name);

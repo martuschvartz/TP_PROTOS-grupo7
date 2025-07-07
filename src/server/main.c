@@ -150,7 +150,6 @@ int main(int argc, char** argv)
     parse_args(argc, argv, &socksArgs);
     for(int i=0; i< socksArgs.cant; i++){
         newUser(socksArgs.users[i].name, socksArgs.users[i].pass);
-        fprintf(stdout, "Nuevo usuario %s : %s\n", socksArgs.users[i].name, socksArgs.users[i].pass);
     }
 
     if (set_server_sock_address(socksArgs.socks_port, &server_addr, &server_addr_len))
