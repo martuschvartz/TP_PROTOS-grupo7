@@ -21,7 +21,6 @@ unsigned int echo_read(selector_key *key)
     printf("recv returned %zd\n", n);
     if (n <= 0) {
         printf("Client disconnected (fd=%d)\n", key->fd);
-        selector_unregister_fd(key->s, key->fd);
         return DONE;
     }
 
@@ -49,7 +48,6 @@ unsigned int echo_write(selector_key *key)
 
     ssize_t n = send(key->fd, ptr, available, 0);
     if (n <= 0) {
-        selector_unregister_fd(key->s, key->fd);
         return DONE;
     }
 

@@ -7,8 +7,25 @@
 
 #define N(x) (sizeof(x)/sizeof((x)[0]))
 
+void done_arrival(const unsigned state, selector_key * key) {
+    printf("Done state\n");
+}
+
+void error_arrival(const unsigned state, selector_key * key) {
+    printf("Error state\n");
+}
+
 /** definición de handlers para cada estado */
 static const struct state_definition client_actions[] = {
+    {
+        .state              = NEGOTIATION_READ,
+        .on_arrival         = negotiation_read_init,
+        .on_read_ready      = negotiation_read,
+    },
+    {
+        .state              = NEGOTIATION_WRITE,
+        .on_read_ready      = negotiation_write,
+    },
     {
         .state              = ECHO_READ,
         .on_read_ready      = echo_read,
@@ -16,6 +33,14 @@ static const struct state_definition client_actions[] = {
     {
         .state              = ECHO_WRITE,
         .on_write_ready     = echo_write,
+    },
+    {
+        .state              = DONE,
+        .on_arrival         = done_arrival
+    },
+    {
+        .state              = ERROR,
+        .on_arrival         = error_arrival
     }
 };
 
@@ -23,11 +48,11 @@ static const struct state_definition client_actions[] = {
 // son los que emiten los eventos a la maquina de estados.
 static void socksv5_done(struct selector_key* key);
 
-static void socksv5_destroy(client_data* key) {
-    printf("socksv5_destroy\n");
+static void socksv5_destroy(client_data* data) {
+    free(data);
 }
 
-static void socksv5_read(struct selector_key *key) {
+static void socksv5_read(selector_key *key) {
     struct state_machine *stm   = &ATTACHMENT(key)->stm;
     const enum socks_v5state st = stm_handler_read(stm, key);
 
@@ -36,7 +61,7 @@ static void socksv5_read(struct selector_key *key) {
     }
 }
 
-static void socksv5_write(struct selector_key *key) {
+static void socksv5_write(selector_key *key) {
     struct state_machine *stm   = &ATTACHMENT(key)->stm;
     const enum socks_v5state st = stm_handler_write(stm, key);
 
@@ -45,7 +70,7 @@ static void socksv5_write(struct selector_key *key) {
     }
 }
 
-static void socksv5_block(struct selector_key *key) {
+static void socksv5_block(selector_key *key) {
     struct state_machine *stm   = &ATTACHMENT(key)->stm;
     const enum socks_v5state st = stm_handler_block(stm, key);
 
@@ -54,12 +79,14 @@ static void socksv5_block(struct selector_key *key) {
     }
 }
 
-static void socksv5_close(struct selector_key *key) {
+static void socksv5_close(selector_key *key) {
+    struct state_machine *stm   = &ATTACHMENT(key)->stm;
+    stm_handler_close(stm, key);
     socksv5_destroy(ATTACHMENT(key));
 }
 
 //chequear
-static void socksv5_done(struct selector_key* key) {
+static void socksv5_done(selector_key* key) {
     const int fds[] = {
         ATTACHMENT(key)->client_fd,
     };
@@ -78,8 +105,8 @@ static client_data * socks5_new(int client_fd){
     client_data * new_client = calloc(1, sizeof(struct client_data));
     
     if(new_client != NULL){
-        new_client->stm.initial = ECHO_READ;
-        new_client->stm.max_state = ECHO_WRITE;
+        new_client->stm.initial = NEGOTIATION_READ;
+        new_client->stm.max_state = ERROR;
         new_client->stm.states = client_actions;
         new_client->client_fd = client_fd;
         buffer_init(&new_client->client.echo.bf, BUFFER_SIZE, new_client->client.echo.bf_raw);
@@ -89,7 +116,7 @@ static client_data * socks5_new(int client_fd){
     return new_client;
 }
 
-static const struct fd_handler socks5_handler = {
+static const fd_handler socks5_handler = {
     .handle_read   = socksv5_read,
     .handle_write  = socksv5_write,
     .handle_close  = socksv5_close,

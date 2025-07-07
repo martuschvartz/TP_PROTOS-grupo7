@@ -14,7 +14,6 @@
 #include <socks5.h>
 
 
-
 static bool done = false;
 
 static void sigterm_handler(const int signal) {
@@ -128,7 +127,7 @@ int main(void)
         err_msg = "Unable to register server socket";
         goto finally;
     }
-    for (; !done;)
+    while (!done)
     {
         err_msg = NULL;
         selector_status = selector_select(selector);
