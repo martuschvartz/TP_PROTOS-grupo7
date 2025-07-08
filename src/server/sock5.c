@@ -19,12 +19,12 @@ void error_arrival(const unsigned state, selector_key * key) {
 static const struct state_definition client_actions[] = {
     {
         .state              = NEGOTIATION_READ,
-        .on_arrival         = negotiation_read_init,
-        .on_read_ready      = negotiation_read,
+   //     .on_arrival         = negotiation_read_init,
+   //     .on_read_ready      = negotiation_read,
     },
     {
         .state              = NEGOTIATION_WRITE,
-        .on_read_ready      = negotiation_write,
+   //     .on_read_ready      = negotiation_write,
     },
     {
         .state              = ECHO_READ,
