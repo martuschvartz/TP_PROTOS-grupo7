@@ -2,6 +2,14 @@
 #define MANAGER_H
 
 #include <selector.h>
+#include <sys/socket.h>
+#include <selector.h>
+#include <stdlib.h>
+#include <echo.h>
+#include <stdio.h>
+#include <string.h>
+#include <selector.h>
+#include <users.h>
 
 /**
  * Función que se registra como handler para aceptar nuevas conexiones

@@ -1,13 +1,9 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>    // close()
-#include <arpa/inet.h> // sockaddr_in, inet_addr
-#include <ctype.h>
-#include <selector.h>
-#include <users.h>
+#include <manager.h>
 
 /*---------------------------------------------------
+
+FALTA:
+    * comandos STAT, LIST-USER, CHANGE-PASS
 
 TODO @josefina
     * autenticación
@@ -60,22 +56,21 @@ void handle_command(int client_fd, char *input)
     if (!cmd)
         return;
 
-    if (strcmp(cmd, "LIST") == 0) // FALLA, se queda como esperndo y después closea (@josefina)
+    if (strcmp(cmd, "LIST") == 0)
     {
+        const user *ulist = getUsers();
+        unsigned int count = getUserCount();
+
         char msg[1024] = "+OK Usuarios:\r\n";
-        for (int i = 0; i < MAX_USERS; i++)
+        for (unsigned int i = 0; i < count; i++)
         {
-            int index = userExists(users[i].name);
-            if (index >= 0)
-            {
-                strcat(msg, " - ");
-                strcat(msg, users[i].name);
-                strcat(msg, "\r\n");
-            }
+            strcat(msg, " - ");
+            strcat(msg, ulist[i].name);
+            strcat(msg, "\r\n");
         }
         send_response(client_fd, msg);
     }
-    else if (strcmp(cmd, "ADD-USER") == 0) // FALLA, me dice ok pero después si hago LIST no me lo muestra (@josefina)
+    else if (strcmp(cmd, "ADD-USER") == 0)
     {
         if (arg1 && arg2)
         {
@@ -95,7 +90,7 @@ void handle_command(int client_fd, char *input)
             send_response(client_fd, "-ERR Faltan parámetros para ADD-USER\r\n");
         }
     }
-    else if (strcmp(cmd, "DELETE-USER") == 0) // ni lo puedo probar por lo anterior (@Josefinamrm)
+    else if (strcmp(cmd, "DELETE-USER") == 0)
     {
         if (arg1)
         {
