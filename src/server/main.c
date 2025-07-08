@@ -130,7 +130,7 @@ int main(int argc, char **argv)
         goto finally;
     }
 
-    if (listen(server, MAX_CLIENTS) < 0)
+    if (listen(manager, MAX_CLIENTS) < 0)
     {
         err_msg = "Unable to listen";
         goto finally;
