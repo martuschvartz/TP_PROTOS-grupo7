@@ -43,12 +43,12 @@ unsigned int echo_write(selector_key *key)
     if (!buffer_can_read(&client_data->client.echo.bf)) {
         // Nothing to write
         selector_set_interest(key->s, key->fd, OP_READ);
-        return ERROR;
+        return SOCKS_ERROR;
     }
 
     ssize_t n = send(key->fd, ptr, available, 0);
     if (n <= 0) {
-        return DONE;
+        return SOCKS_DONE;
     }
 
     buffer_read_adv(&client_data->client.echo.bf, n);
@@ -61,5 +61,5 @@ unsigned int echo_close(selector_key *key)
     client_data *client_data = ATTACHMENT(key);
     free(client_data);
     close(key->fd);
-    return DONE;
+    return SOCKS_DONE;
 }
