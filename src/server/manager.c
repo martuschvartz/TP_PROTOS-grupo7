@@ -110,6 +110,18 @@ void handle_command(int client_fd, char *input)
             send_response(client_fd, "-ERR Falta parámetro para DELETE-USER\r\n");
         }
     }
+    else if (strcmp(cmd, "CHANGE-PASS") == 0)
+    {
+        send_response(client_fd, "TO-DO\r\n");
+    }
+    else if (strcmp(cmd, "LIST-USER") == 0)
+    {
+        send_response(client_fd, "TO-DO\r\n");
+    }
+    else if (strcmp(cmd, "STAT") == 0)
+    {
+        send_response(client_fd, "TO-DO\r\n");
+    }
     else if (strcmp(cmd, "HELP") == 0)
     {
         send_response(client_fd,
