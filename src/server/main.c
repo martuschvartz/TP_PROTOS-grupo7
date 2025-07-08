@@ -173,6 +173,7 @@ int main(int argc, char **argv)
         .handle_write = NULL,
         .handle_close = NULL,
     };
+    selector_status = selector_register(selector, server, &socksv5, OP_READ, NULL);
 
     const struct fd_handler managerDory = {
         .handle_read = manager_passive_accept,
@@ -180,7 +181,8 @@ int main(int argc, char **argv)
         .handle_close = NULL,
     };
 
-    selector_status = selector_register(selector, server, &socksv5, OP_READ, NULL);
+    selector_status = selector_register(selector, manager, &managerDory, OP_READ, NULL);
+
     if (selector_status != SELECTOR_SUCCESS)
     {
         err_msg = "Unable to register server socket";
