@@ -14,6 +14,7 @@
 #include <socks5.h>
 #include "args.h"
 #include "users.h"
+#include <manager.h>
 
 #define MAX_CLIENTS 3 // 500??
 #define BUFFER_SIZE 1024
@@ -108,7 +109,7 @@ int main(int argc, char **argv)
     memset(&manager_addr, 0, sizeof(manager_addr));
     manager_addr_len = sizeof(manager_addr);
 
-    if (set_server_sock_address(socksArgs.mng_port, &mng_addr, &mng_addr_len))
+    if (set_server_sock_address(socksArgs.mng_port, &manager_addr, &manager_addr_len))
     {
         err_msg = "Invalid manager socket address";
         goto finally;
@@ -173,7 +174,7 @@ int main(int argc, char **argv)
         .handle_close = NULL,
     };
 
-    const struct fd_handler manager = {
+    const struct fd_handler managerDory = {
         .handle_read = manager_passive_accept,
         .handle_write = NULL,
         .handle_close = NULL,
