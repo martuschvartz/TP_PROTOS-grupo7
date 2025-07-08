@@ -11,9 +11,9 @@ typedef enum method_types {
 typedef enum states {
     VERSION = 0,
     NMETHODS,
-    METHODS,
-    DONE,
-    ERROR
+    METHODS
+    //DONE,
+    //ERROR
 }states;
 
 typedef struct neg_parser {
