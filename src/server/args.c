@@ -1,20 +1,18 @@
-#include <stdio.h>     /* for printf */
-#include <stdlib.h>    /* for exit */
-#include <limits.h>    /* LONG_MIN et al */
-#include <string.h>    /* memset */
+#include <stdio.h>  /* for printf */
+#include <stdlib.h> /* for exit */
+#include <limits.h> /* LONG_MIN et al */
+#include <string.h> /* memset */
 #include <errno.h>
 #include <getopt.h>
 #include <args.h>
 
 static unsigned short
-port(const char* s)
+port(const char *s)
 {
-    char* end = 0;
+    char *end = 0;
     const long sl = strtol(s, &end, 10);
 
-    if (end == s || '\0' != *end
-        || ((LONG_MIN == sl || LONG_MAX == sl) && ERANGE == errno)
-        || sl < 0 || sl > USHRT_MAX)
+    if (end == s || '\0' != *end || ((LONG_MIN == sl || LONG_MAX == sl) && ERANGE == errno) || sl < 0 || sl > USHRT_MAX)
     {
         fprintf(stderr, "port should in in the range of 1-65536: %s\n", s);
         exit(1);
@@ -24,9 +22,9 @@ port(const char* s)
 }
 
 static void
-user(char* s, struct users* user)
+user(char *s, struct users *user)
 {
-    char* p = strchr(s, ':');
+    char *p = strchr(s, ':');
     if (p == NULL)
     {
         fprintf(stderr, "password not found\n");
@@ -45,12 +43,12 @@ static void
 version(void)
 {
     fprintf(stderr, "socks5v version 0.0\n"
-            "ITBA Protocolos de Comunicación 2025/1 -- Grupo X\n"
-            "AQUI VA LA LICENCIA\n");
+                    "ITBA Protocolos de Comunicación 2025/1 -- Grupo 7\n"
+                    "AQUI VA LA LICENCIA\n");
 }
 
 static void
-usage(const char* progname)
+usage(const char *progname)
 {
     fprintf(stderr,
             "Usage: %s [OPTION]...\n"
@@ -68,8 +66,7 @@ usage(const char* progname)
     exit(1);
 }
 
-void
-parse_args(const int argc, char** argv, struct socks5args* args)
+void parse_args(const int argc, char **argv, struct socks5args *args)
 {
     memset(args, 0, sizeof(*args)); // sobre todo para setear en null los punteros de users
 
@@ -77,7 +74,7 @@ parse_args(const int argc, char** argv, struct socks5args* args)
     args->socks_port = 1080;
 
     args->mng_addr = "127.0.0.1";
-    args->mng_port = 8080;
+    args->mng_port = 1081;
 
     args->disectors_enabled = true;
 
@@ -88,8 +85,7 @@ parse_args(const int argc, char** argv, struct socks5args* args)
     {
         int option_index = 0;
         static struct option long_options[] = {
-            {0, 0, 0, 0}
-        };
+            {0, 0, 0, 0}};
 
         c = getopt_long(argc, argv, "hl:L:Np:P:u:v", long_options, &option_index);
         if (c == -1)
@@ -123,8 +119,8 @@ parse_args(const int argc, char** argv, struct socks5args* args)
             }
             else
             {
-                user(optarg, args->users + nusers);
-                nusers++;
+                user(optarg, args->users + args->cant);
+                args->cant++;
             }
             break;
         case 'v':
@@ -133,6 +129,8 @@ parse_args(const int argc, char** argv, struct socks5args* args)
         default:
             fprintf(stderr, "unknown argument %d.\n", c);
             exit(1);
+            // TODO llamado a cambiar de contraseña
+            // TODO llamado a cambiar de status a algun usuario
         }
     }
     if (optind < argc)

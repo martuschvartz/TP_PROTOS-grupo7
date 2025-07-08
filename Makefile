@@ -28,6 +28,7 @@ $(CLIENT_OUTPUT_FILE): $(CLIENT_OBJECTS) $(SHARED_OBJECTS)
 	mkdir -p $(OUTPUT_FOLDER)
 	$(COMPILER) $(COMPILERFLAGS) $(LDFLAGS) -I$(HEADER_SOURCES) $(CLIENT_OBJECTS) $(SHARED_OBJECTS) -o $(CLIENT_OUTPUT_FILE)
 
+
 clean:
 	rm -rf $(OUTPUT_FOLDER)
 	rm -rf $(OBJECTS_FOLDER)
@@ -38,4 +39,4 @@ obj/%.o: src/%.c
 	mkdir -p $(OBJECTS_FOLDER)/shared
 	$(COMPILER) $(COMPILERFLAGS) -I$(HEADER_SOURCES) -c $< -o $@
 
-.PHONY: all server client clean
+.PHONY: all server client manager clean

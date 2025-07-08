@@ -12,12 +12,18 @@
 #include <buffer.h>
 #include <defaults.h>
 #include <socks5.h>
+#include "args.h"
+#include "users.h"
+#include <manager.h>
 
+#define MAX_CLIENTS 3 // 500??
+#define BUFFER_SIZE 1024
 
 static bool done = false;
 
-static void sigterm_handler(const int signal) {
-    printf("signal %d, cleaning up and exiting\n",signal);
+static void sigterm_handler(const int signal)
+{
+    printf("signal %d, cleaning up and exiting\n", signal);
     done = true;
 }
 
@@ -32,9 +38,9 @@ static void sigterm_handler(const int signal) {
  */
 int set_server_sock_address(int port, void *res_address, int *res_address_length)
 {
+    // acá tmb ipv6 TODO
     struct sockaddr_in sock_ipv4;
     memset(&sock_ipv4, 0, sizeof(sock_ipv4));
-
     sock_ipv4.sin_family = AF_INET;
     sock_ipv4.sin_addr.s_addr = htonl(INADDR_ANY);
     sock_ipv4.sin_port = htons(port);
@@ -45,9 +51,8 @@ int set_server_sock_address(int port, void *res_address, int *res_address_length
     return 0;
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
-    int port = 1080;
     selector_status selector_status = SELECTOR_SUCCESS;
     const char *err_msg = NULL;
     fd_selector selector = NULL;
@@ -57,7 +62,18 @@ int main(void)
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr_len = sizeof(server_addr);
 
-    if (set_server_sock_address(port, &server_addr, &server_addr_len))
+    // init logger TODO, va si o si dsp de tener un selector
+    // sirve tener el logger antes del parse para ya poder ir juntando datos
+    struct socks5args socksArgs;
+    initUsers();
+    socksArgs.cant++; // ya que cree el admin con la funcion initUsers
+    parse_args(argc, argv, &socksArgs);
+    for (int i = 0; i < socksArgs.cant; i++)
+    {
+        newUser(socksArgs.users[i].name, socksArgs.users[i].pass);
+    }
+
+    if (set_server_sock_address(socksArgs.socks_port, &server_addr, &server_addr_len))
     {
         err_msg = "Invalid server socket address";
         goto finally;
@@ -84,7 +100,45 @@ int main(void)
         goto finally;
     }
 
-    fprintf(stdout, "Listenting on TCP port %d\n", port);
+    /* --------------------------------------------------------------------------------*/
+
+    fprintf(stdout, "Listening on TCP port %d\n", socksArgs.socks_port);
+
+    struct sockaddr_storage manager_addr;
+    int manager_addr_len;
+    memset(&manager_addr, 0, sizeof(manager_addr));
+    manager_addr_len = sizeof(manager_addr);
+
+    if (set_server_sock_address(socksArgs.mng_port, &manager_addr, &manager_addr_len))
+    {
+        err_msg = "Invalid manager socket address";
+        goto finally;
+    }
+
+    const int manager = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (manager < 0)
+    {
+        err_msg = "Unable to create manager socket";
+        goto finally;
+    }
+
+    setsockopt(manager, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
+
+    if (bind(manager, (struct sockaddr *)&manager_addr, manager_addr_len) < 0)
+    {
+        err_msg = "Unable to bind socket";
+        goto finally;
+    }
+
+    if (listen(manager, MAX_CLIENTS) < 0)
+    {
+        err_msg = "Unable to listen";
+        goto finally;
+    }
+
+    fprintf(stdout, "Listening on TCP port %d\n", socksArgs.mng_port);
+
+    /* ------------------------------------------------------------------------------*/
 
     signal(SIGTERM, sigterm_handler);
     signal(SIGINT, sigterm_handler);
@@ -119,9 +173,16 @@ int main(void)
         .handle_write = NULL,
         .handle_close = NULL,
     };
+    selector_status = selector_register(selector, server, &socksv5, OP_READ, NULL);
 
-    selector_status = selector_register(selector, server, &socksv5,
-                                        OP_READ, NULL);
+    const struct fd_handler managerDory = {
+        .handle_read = manager_passive_accept,
+        .handle_write = NULL,
+        .handle_close = NULL,
+    };
+
+    selector_status = selector_register(selector, manager, &managerDory, OP_READ, NULL);
+
     if (selector_status != SELECTOR_SUCCESS)
     {
         err_msg = "Unable to register server socket";
@@ -138,8 +199,15 @@ int main(void)
         }
     }
 
+    if (err_msg == NULL)
+    {
+        err_msg = "Closing server";
+    }
+
     int ret = 0;
+
 finally:
+    closeUsers();
     if (selector_status != SELECTOR_SUCCESS)
     {
         fprintf(stderr, "%s: %s\n", (err_msg == NULL) ? "" : err_msg,
@@ -159,9 +227,13 @@ finally:
     }
     selector_close();
 
-    //socksv5_pool_destroy();
+    // socksv5_pool_destroy();
 
     if (server >= 0)
+    {
+        close(server);
+    }
+    if (manager >= 0)
     {
         close(server);
     }
