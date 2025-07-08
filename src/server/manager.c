@@ -25,6 +25,11 @@ typedef struct
 {
     int fd;
     char buffer[BUFFER_SIZE];
+
+    bool logged_in;
+    bool user_sent;
+    char username[50];
+    bool is_admin;
 } manager_data;
 
 static void manager_read(struct selector_key *key);
@@ -46,8 +51,70 @@ void send_response(int client_fd, const char *msg)
     send(client_fd, msg, strlen(msg), 0);
 }
 
+void handle_auth_command(int client_fd, char *cmd, char *arg1, manager_data *data)
+{
+    if (strcmp(cmd, "USER") == 0)
+    {
+        if (arg1)
+        {
+            int index = userExists(arg1);
+            if (index >= 0)
+            {
+                strncpy(data->username, arg1, sizeof(data->username) - 1);
+                data->user_sent = true;
+                send_response(client_fd, "+OK usuario reconocido, ahora PASS\r\n");
+            }
+            else
+            {
+                send_response(client_fd, "-ERR usuario desconocido\r\n");
+            }
+        }
+        else
+        {
+            send_response(client_fd, "-ERR falta nombre de usuario\r\n");
+        }
+    }
+    else if (strcmp(cmd, "PASS") == 0)
+    {
+        if (!data->user_sent)
+        {
+            send_response(client_fd, "-ERR primero manda USER\r\n");
+        }
+        else if (arg1)
+        {
+            if (userLogin(data->username, arg1) == 0)
+            {
+                int index = userExists(data->username);
+                if (index >= 0)
+                {
+                    const user *ulist = getUsers();
+                    if (ulist[index].status == ADMIN)
+                    {
+                        data->logged_in = true;
+                        data->is_admin = true;
+                        send_response(client_fd, "+OK autenticado como admin\r\n");
+                    }
+                    else
+                    {
+                        send_response(client_fd, "-ERR necesitas ser administrador\r\n");
+                        close(client_fd);
+                    }
+                }
+            }
+            else
+            {
+                send_response(client_fd, "-ERR contraseña incorrecta\r\n"); // seguir intentando???
+            }
+        }
+    }
+    else
+    {
+        send_response(client_fd, "-ERR debes autenticarte primero (USER + PASS)\r\n");
+    }
+}
+
 // FALTA MODULARIZAR, y usar las macros OK_MSG y ERR_MSG (@josefina)
-void handle_command(int client_fd, char *input)
+void handle_command(int client_fd, char *input, manager_data *manager_data)
 {
     char *cmd = strtok(input, " ");
     char *arg1 = strtok(NULL, " ");
@@ -55,6 +122,12 @@ void handle_command(int client_fd, char *input)
 
     if (!cmd)
         return;
+
+    if (!manager_data->logged_in)
+    {
+        handle_auth_command(client_fd, cmd, arg1, manager_data);
+        return;
+    }
 
     if (strcmp(cmd, "LIST") == 0)
     {
@@ -188,7 +261,7 @@ static void manager_read(struct selector_key *key)
     }
     data->buffer[n] = 0;
     data->buffer[strcspn(data->buffer, "\r\n")] = 0;
-    handle_command(data->fd, data->buffer);
+    handle_command(data->fd, data->buffer, data);
 }
 
 static void manager_close(struct selector_key *key)
