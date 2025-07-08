@@ -67,7 +67,6 @@ void handle_auth_command(int client_fd, char *cmd, char *arg1, manager_data *dat
             else
             {
                 send_response(client_fd, "-ERR usuario desconocido\r\n");
-                close(client_fd);
             }
         }
         else
