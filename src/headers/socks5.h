@@ -124,8 +124,8 @@ enum socks_v5state {
     ECHO_WRITE,
 
     // estados terminales
-    DONE,
-    ERROR,
+    SOCKS_DONE,
+    SOCKS_ERROR,
 };
 
 

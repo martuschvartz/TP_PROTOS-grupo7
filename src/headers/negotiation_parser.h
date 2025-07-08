@@ -22,14 +22,60 @@ typedef struct neg_parser {
     uint8_t method_quantity;
 }neg_parser;
 
+/**
+ * Checks if negotiation has ended
+ * @param np negotiation parser
+ * @return !=0 if true, else 0
+ */
+int is_negotiation_read_done(neg_parser * np);
+
+/**
+ * Checks if negotiation has errors
+ * @param np negotiation parser
+ * @return !=0 if true, else 0
+ */
+int has_errors(neg_parser * np);
+
+/**
+ * Initializes parser
+ * @param np negotiation parser
+ */
 void initialize_negotiation_parser(neg_parser * np);
 
-void negotiation_parse(neg_parser * p, buffer * buffer);
+/**
+ * Reads from buffer and processes version, nmethods, and methods
+ * @param np negotiation parser
+ * @buffer from which to read characters
+ */
+void negotiation_parse(neg_parser * np, buffer * buffer);
 
-void negotiation_parse_version(neg_parser * p, uint8_t version);
+/**
+ * Checks valid version
+ * @param np negotiation parser
+ * @version version
+ */
+void negotiation_parse_version(neg_parser * np, uint8_t version);
 
-void negotiation_parse_method_count(neg_parser * p, uint8_t method_quantity);
+/**
+ * Checks method count
+ * @param np negotiation parser
+ * @method_quantity method count
+ */
+void negotiation_parse_method_count(neg_parser * np, uint8_t method_quantity);
 
-void negotiation_parse_methods(neg_parser * p, uint8_t current_method);
+/**
+ * Checks valid method
+ * @param np negotiation parser
+ * @version version
+ */
+void negotiation_parse_methods(neg_parser * np, uint8_t current_method);
+
+/**
+ * Leaves response in buffer
+ * @param np negotiation parser
+ * @buffer buffer to leave response
+ * @return 0 if successful, else 1
+ */
+int generate_negotiation_response(neg_parser * np, buffer * buffer);
 
 #endif

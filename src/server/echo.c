@@ -14,14 +14,14 @@ unsigned int echo_read(selector_key *key)
     uint8_t *ptr = buffer_write_ptr(&client_data->client.echo.bf, &available);
     if (!buffer_can_write(&client_data->client.echo.bf)) {
         // buffer is full, drop or wait
-        return ERROR;
+        return SOCKS_ERROR;
     }
 
     const ssize_t n = recv(key->fd, ptr, available, 0);
     printf("recv returned %zd\n", n);
     if (n <= 0) {
         printf("Client disconnected (fd=%d)\n", key->fd);
-        return DONE;
+        return SOCKS_DONE;
     }
 
     printf("didn't return\n");

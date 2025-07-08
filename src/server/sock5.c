@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <echo.h>
 #include <stdio.h>
+#include <negotiation.h>
 
 #define N(x) (sizeof(x)/sizeof((x)[0]))
 
@@ -24,7 +25,7 @@ static const struct state_definition client_actions[] = {
     },
     {
         .state              = NEGOTIATION_WRITE,
-        .on_read_ready      = negotiation_write,
+        .on_write_ready      = negotiation_write,
     },
     {
         .state              = ECHO_READ,
@@ -35,11 +36,11 @@ static const struct state_definition client_actions[] = {
         .on_write_ready     = echo_write,
     },
     {
-        .state              = DONE,
+        .state              = SOCKS_DONE,
         .on_arrival         = done_arrival
     },
     {
-        .state              = ERROR,
+        .state              = SOCKS_ERROR,
         .on_arrival         = error_arrival
     }
 };
@@ -56,7 +57,7 @@ static void socksv5_read(selector_key *key) {
     struct state_machine *stm   = &ATTACHMENT(key)->stm;
     const enum socks_v5state st = stm_handler_read(stm, key);
 
-    if(ERROR == st || DONE == st) {
+    if(SOCKS_ERROR == st || SOCKS_DONE == st) {
         socksv5_done(key);
     }
 }
@@ -65,7 +66,7 @@ static void socksv5_write(selector_key *key) {
     struct state_machine *stm   = &ATTACHMENT(key)->stm;
     const enum socks_v5state st = stm_handler_write(stm, key);
 
-    if(ERROR == st || DONE == st) {
+    if(SOCKS_ERROR == st || SOCKS_DONE == st) {
         socksv5_done(key);
     }
 }
@@ -74,7 +75,7 @@ static void socksv5_block(selector_key *key) {
     struct state_machine *stm   = &ATTACHMENT(key)->stm;
     const enum socks_v5state st = stm_handler_block(stm, key);
 
-    if(ERROR == st || DONE == st) {
+    if(SOCKS_ERROR == st || SOCKS_DONE == st) {
         socksv5_done(key);
     }
 }
