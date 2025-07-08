@@ -45,7 +45,7 @@ static void
 version(void)
 {
     fprintf(stderr, "socks5v version 0.0\n"
-            "ITBA Protocolos de Comunicación 2025/1 -- Grupo X\n"
+            "ITBA Protocolos de Comunicación 2025/1 -- Grupo 7\n"
             "AQUI VA LA LICENCIA\n");
 }
 
@@ -123,8 +123,8 @@ parse_args(const int argc, char** argv, struct socks5args* args)
             }
             else
             {
-                user(optarg, args->users + nusers);
-                nusers++;
+                user(optarg, args->users + args->cant);
+                args->cant++;
             }
             break;
         case 'v':
@@ -133,6 +133,8 @@ parse_args(const int argc, char** argv, struct socks5args* args)
         default:
             fprintf(stderr, "unknown argument %d.\n", c);
             exit(1);
+        //TODO llamado a cambiar de contraseña
+        //TODO llamado a cambiar de status a algun usuario
         }
     }
     if (optind < argc)
