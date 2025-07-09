@@ -18,6 +18,8 @@ int newUser(const char *name, const char *pass);
 
 void changeStatus(const char *name, int newStatus);
 
+int changePassword(const char *name, const char *old, const char *new);
+
 int deleteUser(const char *name);
 
 int initUsers();
@@ -27,6 +29,7 @@ int closeUsers();
 int userLogin(const char *name, const char *password);
 
 int userExists(const char *name);
+
 
 const user *getUsers();
 

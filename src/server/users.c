@@ -28,8 +28,11 @@ int newUser(const char *name, const char *pass)
     fprintf(stdout, "aca?\n");
     // TODO no hacemos ningun chequeo de nivel de contraseña :)
 
-    strcpy(users[cantUsers].name, name);
-    strcpy(users[cantUsers].pass, pass);
+    memset(users[cantUsers].name, 0, MAX_LENGTH + 1);
+    strncpy(users[cantUsers].name, name, MAX_LENGTH);
+    memset(users[cantUsers].pass, 0, MAX_LENGTH + 1);
+    strncpy(users[cantUsers].pass, pass, MAX_LENGTH);
+
     users[cantUsers].status = COMMONER;
     cantUsers++;
 
@@ -54,6 +57,7 @@ void changeStatus(const char *name, int newStatus)
     }
 
     // TODO chequeo de status del q pide la acción
+    // preguntarle a las chicas si sus protocolos guarda q usuario esta iniciado sesión
 
     users[index].status = newStatus;
     if (newStatus == ADMIN)
@@ -65,6 +69,28 @@ void changeStatus(const char *name, int newStatus)
         admins--;
     }
 }
+
+int changePassword(const char *name, const char *old, const char *new){
+    
+    int index = userExists(name);
+    if (index == -1)
+    {
+        fprintf(stderr, "This username does not exist.\n");
+        return -1;
+    }
+
+    // Check pass
+    if (strcmp(users[index].pass, old) == 0)
+    {
+        strncpy(users[index].pass, new, MAX_LENGTH);
+        users[index].pass[MAX_LENGTH] = '\0';
+        return 0;
+    }
+
+    fprintf(stderr, "The password is incorrect.\n");
+    return -1;
+}
+
 
 int deleteUser(const char *name)
 {
@@ -101,7 +127,7 @@ int initUsers()
     users = NULL;
     cantUsers = 0;
 
-    users = malloc(MAX_USERS * sizeof(user)); // Podriamos crearlo chico y haceSrlo crecer mientras q se agregan users TODO
+    users = malloc(MAX_USERS * sizeof(user)); // Podriamos crearlo chico y hacerlo crecer mientras q se agregan users TODO
     if (users == NULL)
     {
         fprintf(stderr, "Error in malloc for 'users' array\n");
