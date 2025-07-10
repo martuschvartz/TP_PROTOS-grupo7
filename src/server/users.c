@@ -13,7 +13,7 @@ static unsigned int cantUsers, admins;
 
 int newUser(const char *name, const char *pass)
 {
-
+    //TODO chequear q name sea de al menos un caracter
     if (userExists(name) >= 0)
     {
         fprintf(stderr, "Username is already in use, please choose another name.\n");
@@ -127,7 +127,7 @@ int initUsers()
     users = NULL;
     cantUsers = 0;
 
-    users = malloc(MAX_USERS * sizeof(user)); // Podriamos crearlo chico y hacerlo crecer mientras q se agregan users TODO
+    users = malloc(MAX_USERS * sizeof(user));
     if (users == NULL)
     {
         fprintf(stderr, "Error in malloc for 'users' array\n");

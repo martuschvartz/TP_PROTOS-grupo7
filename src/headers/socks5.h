@@ -6,6 +6,7 @@
 #include <defaults.h>
 #include <stm.h>
 #include <negotiation_parser.h>
+#include "metrics.h"
 
 /** obtiene el struct (client_data *) desde la llave de selección  */
 #define ATTACHMENT(key) ( (struct client_data *)(key)->data)

@@ -44,6 +44,8 @@ unsigned int negotiation_write(selector_key *key) {
         return SOCKS_ERROR;
     }
 
+    moreBytes((unsigned int)bytes_sent);
+    
     buffer_read_adv(&client_data->client.negotiation.bf, bytes_sent);
     // there are bytes to be sent yet
     if (buffer_can_read(&client_data->client.negotiation.bf)) {
