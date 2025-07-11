@@ -94,6 +94,7 @@ static void socksv5_close(selector_key *key) {
     struct state_machine *stm   = &ATTACHMENT(key)->stm;
     stm_handler_close(stm, key);
     socksv5_destroy(ATTACHMENT(key));
+    less_connections(); //TODO puede ser q vaya en la funcion de socksv5_done
 }
 
 //chequear
@@ -159,6 +160,8 @@ void socks_v5_passive_accept(selector_key * selector_key){
     if (SELECTOR_SUCCESS != selector_register(selector_key->s, client, &socks5_handler, OP_READ, state)){
         goto fail;
     }
+    
+    more_connections();
     return;
 
 fail: 

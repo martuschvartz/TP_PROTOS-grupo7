@@ -6,6 +6,7 @@
 #include <defaults.h>
 #include <stm.h>
 #include <negotiation_parser.h>
+#include "metrics.h"
 #include <authentication_parser.h>
 
 /** obtiene el struct (client_data *) desde la llave de selección  */

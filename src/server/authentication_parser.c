@@ -61,7 +61,7 @@ int is_auth_done(auth_parser * ap) {
 
 
 int auth_generate_response(auth_parser * ap, buffer * buffer) {
-    int login = userLogin(ap->uname, ap->passwd);
+    int login = user_login(ap->uname, ap->passwd);
     ap->authenticated = login < 0 ? ACCESS_DENIED: AUTHENTICATED;
     if (!buffer_can_write(buffer)) {
         return 1;

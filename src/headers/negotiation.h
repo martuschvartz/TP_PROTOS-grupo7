@@ -5,6 +5,7 @@
 #include <negotiation_parser.h>
 #include <sys/socket.h>
 #include <stdio.h>
+#include "metrics.h"
 
 void negotiation_read_init(const unsigned state, selector_key * key);
 
