@@ -1,6 +1,7 @@
 #include <authentication_parser.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <users.h>
 
 #include "negotiation_parser.h"
 
