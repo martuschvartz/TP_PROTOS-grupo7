@@ -13,7 +13,7 @@ unsigned int negotiation_read(selector_key *key) {
     uint8_t *ptr = buffer_write_ptr(&client_data->client.negotiation.bf, &bytes_available);
 
     // wait? buffer is full
-    if (!buffer_can_write(&client_data->client.echo.bf)) {
+    if (!buffer_can_write(&client_data->client.negotiation.bf)) {
         return NEGOTIATION_READ;
     }
 
@@ -52,7 +52,7 @@ unsigned int negotiation_write(selector_key *key) {
         return NEGOTIATION_WRITE;
     }
 
-    if (selector_set_interest_key(key, OP_READ) != SELECTOR_SUCCESS) {
+    if (client_data->client.negotiation.parser.selected_method == NOT_ACCEPTABLE || selector_set_interest_key(key, OP_READ) != SELECTOR_SUCCESS) {
         return SOCKS_ERROR;
     }
     return  AUTH_READ;

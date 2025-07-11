@@ -42,7 +42,7 @@
 #define MAX_LENGTH 255
 
 typedef enum auth_states{
-    AUTH_VERSION = 0,
+    AUTH_PARSE_VERSION = 0,
     AUTH_ULEN,
     AUTH_UNAME,
     AUTH_PLEN,

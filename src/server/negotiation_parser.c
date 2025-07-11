@@ -59,7 +59,7 @@ void negotiation_parse_methods(neg_parser *np, uint8_t current_method) {
     if (current_method == required_method) {
         np->selected_method = current_method;
     }
-    np->current_state = np->method_quantity == 0 ? NEG_DONE : NEG_METHOD_COUNT;
+    np->current_state = np->method_quantity == 0 ? NEG_DONE : NEG_METHOD_LIST;
 }
 
 int generate_negotiation_response(neg_parser * np, buffer * buffer) {

@@ -2,16 +2,14 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <users.h>
+#include <negotiation_parser.h>
 
-#include "negotiation_parser.h"
-
-// rfc says 0x01 -> gssapi?
-#define AUTH_VERSION 0x02
+#define AUTH_VERSION 0x01
 
 void initialize_auth_parser(auth_parser * ap) {
     if (ap != NULL) {
-        ap->current_state = AUTH_VERSION;
-        ap->authenticated = 0;
+        ap->current_state = AUTH_PARSE_VERSION;
+        ap->authenticated = ACCESS_DENIED;
         ap->length = 0;
     }
 }
@@ -43,7 +41,11 @@ void auth_parse_length(auth_parser * ap, uint8_t length) {
 void auth_parse_characters(auth_parser * ap, buffer * buffer) {
     int i  = 0;
     while(i < ap->length && buffer_can_read(buffer)) {
-        ap->uname[i++] = buffer_read(buffer);
+        if (ap->current_state == AUTH_UNAME) {
+            ap->uname[i++] = buffer_read(buffer);
+        }else {
+            ap->passwd[i++] = buffer_read(buffer);
+        }
     }
     ap->length = 0;
     ap->current_state = (ap->current_state == AUTH_UNAME) ? AUTH_PLEN : AUTH_DONE;
@@ -76,7 +78,7 @@ int auth_generate_response(auth_parser * ap, buffer * buffer) {
 
 void auth_parse(auth_parser * ap, buffer * buffer) {
     while (buffer_can_read(buffer) && !is_auth_done(ap)) {
-        if (ap->current_state == AUTH_VERSION) {
+        if (ap->current_state == AUTH_PARSE_VERSION) {
             auth_parse_version(ap, buffer_read(buffer));
         }
         else if (ap->current_state == AUTH_ULEN || ap->current_state == AUTH_PLEN) {

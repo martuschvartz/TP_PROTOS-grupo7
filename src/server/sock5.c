@@ -118,7 +118,7 @@ static client_data * socks5_new(int client_fd){
     
     if(new_client != NULL){
         new_client->stm.initial = NEGOTIATION_READ;
-        new_client->stm.max_state = NEG_ERROR;
+        new_client->stm.max_state = SOCKS_ERROR;
         new_client->stm.states = client_actions;
         new_client->client_fd = client_fd;
         buffer_init(&new_client->client.echo.bf, BUFFER_SIZE, new_client->client.echo.bf_raw);

@@ -37,7 +37,7 @@ unsigned authentication_write(selector_key * key) {
     fprintf(stdout, "Authentication Write Started\n");
     client_data * data = ATTACHMENT(key);
     size_t bytes_to_write;
-    uint8_t *ptr = buffer_write_ptr(&data->client.authentication.bf, &bytes_to_write);
+    uint8_t *ptr = buffer_read_ptr(&data->client.authentication.bf, &bytes_to_write);
 
     ssize_t bytes_sent = send(key->fd, ptr, bytes_to_write, MSG_NOSIGNAL);
     if (bytes_sent <= 0) {
