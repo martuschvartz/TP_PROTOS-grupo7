@@ -13,7 +13,17 @@ static unsigned int cantUsers, admins;
 
 int newUser(const char *name, const char *pass)
 {
-    //TODO chequear q name sea de al menos un caracter
+
+    // Chequear que name y pass no estén vacíos
+    if (name == NULL || name[0] == '\0') {
+        fprintf(stderr, "Username must have at least one character.\n");
+        return -1;
+    }
+    if (pass == NULL || pass[0] == '\0') {
+        fprintf(stderr, "Password must have at least one character.\n");
+        return -1;
+    }
+    
     if (userExists(name) >= 0)
     {
         fprintf(stderr, "Username is already in use, please choose another name.\n");
@@ -24,9 +34,6 @@ int newUser(const char *name, const char *pass)
         fprintf(stderr, "You have reached max amount of users, we cant create %s\n", name);
         return -1;
     }
-
-    fprintf(stdout, "aca?\n");
-    // TODO no hacemos ningun chequeo de nivel de contraseña :)
 
     memset(users[cantUsers].name, 0, MAX_LENGTH + 1);
     strncpy(users[cantUsers].name, name, MAX_LENGTH);
