@@ -57,7 +57,7 @@ void handle_auth_command(int client_fd, char *cmd, char *arg1, manager_data *dat
     {
         if (arg1)
         {
-            int index = userExists(arg1);
+            int index = user_exists(arg1);
             if (index >= 0)
             {
                 strncpy(data->username, arg1, sizeof(data->username) - 1);
@@ -82,12 +82,12 @@ void handle_auth_command(int client_fd, char *cmd, char *arg1, manager_data *dat
         }
         else if (arg1)
         {
-            if (userLogin(data->username, arg1) == 0)
+            if (user_login(data->username, arg1) == 0)
             {
-                int index = userExists(data->username);
+                int index = user_exists(data->username);
                 if (index >= 0)
                 {
-                    const user *ulist = getUsers();
+                    const Tuser *ulist = get_users();
                     if (ulist[index].status == ADMIN)
                     {
                         data->logged_in = true;
@@ -131,8 +131,8 @@ void handle_command(int client_fd, char *input, manager_data *manager_data)
 
     if (strcmp(cmd, "LIST") == 0)
     {
-        const user *ulist = getUsers();
-        unsigned int count = getUserCount();
+        const Tuser *ulist = get_users();
+        unsigned int count = get_user_count();
 
         char msg[1024] = "+OK Usuarios:\r\n";
         for (unsigned int i = 0; i < count; i++)
@@ -147,7 +147,7 @@ void handle_command(int client_fd, char *input, manager_data *manager_data)
     {
         if (arg1 && arg2)
         {
-            if (newUser(arg1, arg2) == 0)
+            if (new_user(arg1, arg2) == 0)
             {
                 char msg[128];
                 snprintf(msg, sizeof(msg), "+OK Usuario %s agregado\r\n", arg1);
@@ -167,7 +167,7 @@ void handle_command(int client_fd, char *input, manager_data *manager_data)
     {
         if (arg1)
         {
-            if (deleteUser(arg1) == 0)
+            if (delete_user(arg1) == 0)
             {
                 char msg[128];
                 snprintf(msg, sizeof(msg), "+OK Usuario %s eliminado\r\n", arg1);

@@ -65,12 +65,12 @@ int main(int argc, char **argv)
     // init logger TODO, va si o si dsp de tener un selector
     // sirve tener el logger antes del parse para ya poder ir juntando datos
     struct socks5args socksArgs;
-    initUsers();
+    init_users();
     socksArgs.cant++; // ya que cree el admin con la funcion initUsers
     parse_args(argc, argv, &socksArgs);
     for (int i = 0; i < socksArgs.cant; i++)
     {
-        newUser(socksArgs.users[i].name, socksArgs.users[i].pass);
+        new_user(socksArgs.users[i].name, socksArgs.users[i].pass);
     }
 
     if (set_server_sock_address(socksArgs.socks_port, &server_addr, &server_addr_len))
@@ -207,7 +207,7 @@ int main(int argc, char **argv)
     int ret = 0;
 
 finally:
-    closeUsers();
+    close_users();
     if (selector_status != SELECTOR_SUCCESS)
     {
         fprintf(stderr, "%s: %s\n", (err_msg == NULL) ? "" : err_msg,

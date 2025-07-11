@@ -10,29 +10,28 @@ typedef struct
     char name[MAX_LENGTH + 1];
     char pass[MAX_LENGTH + 1];
     int status;
-} user;
+} Tuser;
 
-static user *users; // lista de usuarios
+static Tuser *users; // lista de usuarios
 
-int newUser(const char *name, const char *pass);
+int new_user(const char *name, const char *pass);
 
-void changeStatus(const char *name, int newStatus);
+void change_status(const char *name, int newStatus);
 
-int changePassword(const char *name, const char *old, const char *new);
+int change_password(const char *name, const char *old, const char *new);
 
-int deleteUser(const char *name);
+int delete_user(const char *name);
 
-int initUsers();
+int init_users();
 
-int closeUsers();
+int close_users();
 
-int userLogin(const char *name, const char *password);
+int user_login(const char *name, const char *password);
 
-int userExists(const char *name);
+int user_exists(const char *name);
 
+const Tuser *get_users();
 
-const user *getUsers();
-
-unsigned int getUserCount();
+unsigned int get_user_count();
 
 #endif

@@ -1,16 +1,16 @@
 #ifndef METRICS_H
 #define METRICS_H
 
-void moreConnections();
+void more_connections();
 
-void lessConnections();
+void less_connections();
 
-unsigned int getHistoricalConnections();
+unsigned int get_historical_connections();
 
-unsigned int getConnections();
+unsigned int get_connections();
 
-void moreBytes(unsigned int bytes);
+void more_bytes(unsigned int bytes);
 
-unsigned int getBytes();
+unsigned int get_bytes();
 
 #endif

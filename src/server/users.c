@@ -8,10 +8,9 @@
 #include <getopt.h>
 #include "args.h"
 
-static user *users; // lista de usuarios
 static unsigned int cantUsers, admins;
 
-int newUser(const char *name, const char *pass)
+int new_user(const char *name, const char *pass)
 {
 
     // Chequear que name y pass no estén vacíos
@@ -24,7 +23,7 @@ int newUser(const char *name, const char *pass)
         return -1;
     }
     
-    if (userExists(name) >= 0)
+    if (user_exists(name) >= 0)
     {
         fprintf(stderr, "Username is already in use, please choose another name.\n");
         return -1;
@@ -47,10 +46,10 @@ int newUser(const char *name, const char *pass)
     return 0;
 }
 
-void changeStatus(const char *name, int newStatus)
+void change_status(const char *name, int newStatus)
 {
 
-    int index = userExists(name);
+    int index = user_exists(name);
 
     if (index < 0)
     {
@@ -77,9 +76,9 @@ void changeStatus(const char *name, int newStatus)
     }
 }
 
-int changePassword(const char *name, const char *old, const char *new){
+int change_password(const char *name, const char *old, const char *new){
     
-    int index = userExists(name);
+    int index = user_exists(name);
     if (index == -1)
     {
         fprintf(stderr, "This username does not exist.\n");
@@ -99,10 +98,10 @@ int changePassword(const char *name, const char *old, const char *new){
 }
 
 
-int deleteUser(const char *name)
+int delete_user(const char *name)
 {
     fprintf(stderr, "en delete\n");
-    int index = userExists(name);
+    int index = user_exists(name);
 
     if (index < 0)
     {
@@ -129,12 +128,12 @@ int deleteUser(const char *name)
     return 0;
 }
 
-int initUsers()
+int init_users()
 {
-    users = NULL;
+    users = NULL; //hmmmm TODO
     cantUsers = 0;
 
-    users = malloc(MAX_USERS * sizeof(user));
+    users = malloc(MAX_USERS * sizeof(Tuser));
     if (users == NULL)
     {
         fprintf(stderr, "Error in malloc for 'users' array\n");
@@ -144,22 +143,22 @@ int initUsers()
     if (admins == 0)
     {
         fprintf(stderr, "No admins yet, creating admin with name: admin and password: admin\n");
-        newUser("admin", "admin");
-        changeStatus("admin", ADMIN);
+        new_user("admin", "admin");
+        change_status("admin", ADMIN);
     }
 
     return 0;
 }
 
-int closeUsers()
+int close_users()
 {
     free(users);
     return 0;
 }
 
-int userLogin(const char *name, const char *password)
+int user_login(const char *name, const char *password)
 {
-    int index = userExists(name);
+    int index = user_exists(name);
     if (index == -1)
     {
         return -1;
@@ -174,7 +173,7 @@ int userLogin(const char *name, const char *password)
     return -1;
 }
 
-int userExists(const char *name)
+int user_exists(const char *name)
 {
     for (int i = 0; i < cantUsers; i++)
     {
@@ -186,12 +185,12 @@ int userExists(const char *name)
     return -1;
 }
 
-const user *getUsers()
+const Tuser *get_users()
 {
     return users;
 }
 
-unsigned int getUserCount()
+unsigned int get_user_count()
 {
     return cantUsers;
 }
