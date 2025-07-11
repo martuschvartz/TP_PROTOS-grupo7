@@ -2,6 +2,7 @@
 #define MANAGER_H
 
 #include <selector.h>
+#include <unistd.h>
 #include <sys/socket.h>
 #include <selector.h>
 #include <stdlib.h>

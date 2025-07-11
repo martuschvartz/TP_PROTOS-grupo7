@@ -5,6 +5,7 @@
 #include <echo.h>
 #include <stdio.h>
 #include <negotiation.h>
+#include <authentication.h>
 
 #define N(x) (sizeof(x)/sizeof((x)[0]))
 
@@ -26,6 +27,15 @@ static const struct state_definition client_actions[] = {
     {
         .state              = NEGOTIATION_WRITE,
         .on_write_ready      = negotiation_write,
+    },
+    {
+        .state              = AUTH_READ,
+        .on_arrival         = authentication_read_init,
+        .on_read_ready      = authentication_read,
+    },
+    {
+        .state              = AUTH_WRITE,
+        .on_write_ready     = authentication_write,
     },
     {
         .state              = ECHO_READ,
@@ -107,7 +117,7 @@ static client_data * socks5_new(int client_fd){
     
     if(new_client != NULL){
         new_client->stm.initial = NEGOTIATION_READ;
-        new_client->stm.max_state = ERROR;
+        new_client->stm.max_state = NEG_ERROR;
         new_client->stm.states = client_actions;
         new_client->client_fd = client_fd;
         buffer_init(&new_client->client.echo.bf, BUFFER_SIZE, new_client->client.echo.bf_raw);

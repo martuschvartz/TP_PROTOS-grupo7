@@ -6,6 +6,7 @@
 #include <defaults.h>
 #include <stm.h>
 #include <negotiation_parser.h>
+#include <authentication_parser.h>
 
 /** obtiene el struct (client_data *) desde la llave de selección  */
 #define ATTACHMENT(key) ( (struct client_data *)(key)->data)
@@ -38,31 +39,31 @@ enum socks_v5state {
      */
     NEGOTIATION_WRITE,
 
-    // /**
-    //  * Lee y procesa usuario/contraseña del cliente
-    //  *
-    //  * Intereses:
-    //  *     - OP_READ sobre client_fd
-    //  *
-    //  * Transiciones:
-    //  *   - AUTH_READ        mientras el mensaje no esté completo
-    //  *   - AUTH_WRITE       cuando está completo
-    //  *   - ERROR            ante cualquier error (IO/parseo)
-    //  */
-    // AUTH_READ,
-    //
-    // /**
-    //  * Envía la respuesta de la autenticación al cliente.
-    //  *
-    //  * Intereses:
-    //  *     - OP_WRITE sobre client_fd
-    //  *
-    //  * Transiciones:
-    //  *   - AUTH_WRITE       mientras queden bytes por enviar
-    //  *   - REQ_READ         cuando se enviaron todos los bytes
-    //  *   - ERROR            ante cualquier error (IO/parseo)
-    //  */
-    // AUTH_WRITE,
+    /**
+     * Lee y procesa usuario/contraseña del cliente
+     *
+     * Intereses:
+     *     - OP_READ sobre client_fd
+     *
+     * Transiciones:
+     *   - AUTH_READ        mientras el mensaje no esté completo
+     *   - AUTH_WRITE       cuando está completo
+     *   - ERROR            ante cualquier error (IO/parseo)
+     */
+    AUTH_READ,
+
+    /**
+     * Envía la respuesta de la autenticación al cliente.
+     *
+     * Intereses:
+     *     - OP_WRITE sobre client_fd
+     *
+     * Transiciones:
+     *   - AUTH_WRITE       mientras queden bytes por enviar
+     *   - REQ_READ         cuando se enviaron todos los bytes
+     *   - ERROR            ante cualquier error (IO/parseo)
+     */
+    AUTH_WRITE,
     //
     // /**
     //  * Lee y procesa la request del cliente
@@ -141,6 +142,12 @@ typedef struct negotiation_st {
     neg_parser parser;
 } negotiation_st;
 
+typedef struct authentication_st {
+    buffer bf;
+    uint8_t bf_raw[BUFFER_SIZE];
+    auth_parser parser;
+} authentication_st;
+
 typedef struct client_data{
     struct state_machine stm;
 
@@ -148,6 +155,7 @@ typedef struct client_data{
     union{
         echo_st echo;
         negotiation_st negotiation;
+        authentication_st authentication;
     } client;
 
     int client_fd;
