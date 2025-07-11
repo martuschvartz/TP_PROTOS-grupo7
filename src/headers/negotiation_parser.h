@@ -8,17 +8,17 @@ typedef enum method_types {
     NOT_ACCEPTABLE = 0xFF
 }method_types;
 
-typedef enum states {
-    VERSION = 0,
-    NMETHODS,
-    METHODS,
-    DONE,
-    ERROR
-}states;
+typedef enum neg_states {
+    NEG_VERSION = 0,
+    NEG_METHOD_COUNT,
+    NEG_METHOD_LIST,
+    NEG_DONE,
+    NEG_ERROR
+}neg_states;
 
 typedef struct neg_parser {
     method_types selected_method;
-    states current_state;
+    neg_states current_state;
     uint8_t method_quantity;
 }neg_parser;
 

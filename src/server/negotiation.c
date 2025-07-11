@@ -53,5 +53,5 @@ unsigned int negotiation_write(selector_key *key) {
     if (selector_set_interest_key(key, OP_READ) != SELECTOR_SUCCESS) {
         return SOCKS_ERROR;
     }
-    return  ECHO_READ;
+    return  AUTH_READ;
 }
