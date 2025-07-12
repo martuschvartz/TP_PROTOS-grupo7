@@ -168,7 +168,7 @@ void handle_command(int client_fd, char *input, manager_data *manager_data)
     }
     else if (strcmp(cmd, "STAT") == 0)
     {
-        send_response(client_fd, "TO-DO\r\n", true); //////////////////////////////////////////////////////////////////////////////////////////
+        handle_stat(client_fd);
     }
     else if (strcmp(cmd, "CHANGE-STATUS") == 0)
     {
@@ -324,6 +324,18 @@ void handle_change_status(int fd, char *user, char *status)
     change_status(user, strcmp(status, "admin") == 0 ? ADMIN : COMMONER);
     char msg[MAX_LENGTH_MSG];
     snprintf(msg, sizeof(msg), "Estado de %s cambiado a %s\r\n", user, strcmp(status, "admin") == 0 ? "admin" : "commoner");
+    send_response(fd, msg, false);
+}
+
+void handle_stat(int fd)
+{
+    int count_users = get_user_count();
+    int current_connections = get_connections();
+    int historical_connections = get_historical_connections();
+    unsigned int bytes = get_bytes();
+    unsigned int count = get_user_count();
+    char msg[MAX_LENGTH_MSG];
+    snprintf(msg, sizeof(msg), "\r\n-Total usuarios concurrentes: %u\r\n-Conexiones concurrentes: %d\r\n-Conexiones históricas: %d\r\n-Bytes transferidos: %d\r\n", count, current_connections, historical_connections, bytes);
     send_response(fd, msg, false);
 }
 
