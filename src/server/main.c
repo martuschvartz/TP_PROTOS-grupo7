@@ -62,8 +62,7 @@ int main(int argc, char **argv)
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr_len = sizeof(server_addr);
 
-    // init logger TODO, va si o si dsp de tener un selector
-    // sirve tener el logger antes del parse para ya poder ir juntando datos
+    create_sbs(); // sirve tener el logger antes del parse para ya poder ir juntando datos
     struct socks5args socksArgs;
     init_users();
     socksArgs.cant++; // ya que cree el admin con la funcion initUsers
@@ -208,6 +207,9 @@ int main(int argc, char **argv)
 
 finally:
     close_users();
+    log_free();
+    access_free();
+    
     if (selector_status != SELECTOR_SUCCESS)
     {
         fprintf(stderr, "%s: %s\n", (err_msg == NULL) ? "" : err_msg,

@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <getopt.h>
 #include "args.h"
+#include "logger.h"
 
 static unsigned int cantUsers, admins;
 
@@ -15,22 +16,28 @@ int new_user(const char *name, const char *pass)
 
     // Chequear que name y pass no estén vacíos
     if (name == NULL || name[0] == '\0') {
-        fprintf(stderr, "Username must have at least one character.\n");
+        our_log(WARNING, "Username must have at least one character.");
         return -1;
     }
     if (pass == NULL || pass[0] == '\0') {
-        fprintf(stderr, "Password must have at least one character.\n");
+        our_log(WARNING, "Password must have at least one character.");
         return -1;
     }
     
     if (user_exists(name) >= 0)
     {
-        fprintf(stderr, "Username is already in use, please choose another name.\n");
+        our_log(WARNING, "Username is already in use, please choose another name.");
         return -1;
     }
+
     if (cantUsers >= MAX_USERS)
     {
-        fprintf(stderr, "You have reached max amount of users, we cant create %s\n", name);
+        StringBuilder *sb = sb_create();
+        sb_append(sb, "You have reached max amount of users, we cant create ");
+        sb_append(sb, name);
+        our_log(WARNING, sb_get_string(sb));
+        sb_free(sb);
+
         return -1;
     }
 
@@ -42,7 +49,12 @@ int new_user(const char *name, const char *pass)
     users[cantUsers].status = COMMONER;
     cantUsers++;
 
-    fprintf(stdout, "Created user %s\n", name);
+    StringBuilder *sb = sb_create();
+    sb_append(sb, "Created user ");
+    sb_append(sb, name);
+    our_log(INFO, sb_get_string(sb));
+    sb_free(sb);
+    
     return 0;
 }
 
@@ -53,7 +65,12 @@ void change_status(const char *name, int newStatus)
 
     if (index < 0)
     {
-        fprintf(stderr, "This user does not exist. C\n");
+        StringBuilder *sb = sb_create();
+        sb_append(sb, "User ");
+        sb_append(sb, name);
+        sb_append(sb, ", does not exist.\n");
+        our_log(WARNING, sb_get_string(sb));
+        sb_free(sb);
         return;
     }
 
@@ -81,8 +98,12 @@ int change_password(const char *name, const char *old, const char *new){
     int index = user_exists(name);
     if (index == -1)
     {
-        fprintf(stderr, "This username does not exist.\n");
-        return -1;
+        StringBuilder *sb = sb_create();
+        sb_append(sb, "User ");
+        sb_append(sb, name);
+        sb_append(sb, ", does not exist.\n");
+        our_log(WARNING, sb_get_string(sb));
+        sb_free(sb);        return -1;
     }
 
     // Check pass
@@ -93,27 +114,35 @@ int change_password(const char *name, const char *old, const char *new){
         return 0;
     }
 
-    fprintf(stderr, "The password is incorrect.\n");
+    our_log(ERROR, "The password is incorrect.\n");
     return -1;
 }
 
 
 int delete_user(const char *name)
 {
-    fprintf(stderr, "en delete\n");
     int index = user_exists(name);
 
     if (index < 0)
     {
-        fprintf(stderr, "This user does not exist. D\n");
-        return -1;
+        StringBuilder *sb = sb_create();
+        sb_append(sb, "User ");
+        sb_append(sb, name);
+        sb_append(sb, ", does not exist.\n");
+        our_log(WARNING, sb_get_string(sb));
+        sb_free(sb);        return -1;
     }
 
     if (users[index].status == ADMIN)
     {
         if (admins == 1)
         { // solo queda uno
-            fprintf(stderr, "We cant allow you to delete %s, its the only user with ADMIN powers.\n", name);
+             StringBuilder *sb = sb_create();
+            sb_append(sb, "We cant allow you to delete ");
+            sb_append(sb, name);
+            sb_append(sb, ", its the only user with ADMIN powers.\n");
+            our_log(ERROR, sb_get_string(sb));
+            sb_free(sb);
             return -1;
         }
         admins--;
@@ -130,19 +159,16 @@ int delete_user(const char *name)
 
 int init_users()
 {
-    users = NULL; //hmmmm TODO
-    cantUsers = 0;
-
     users = malloc(MAX_USERS * sizeof(Tuser));
     if (users == NULL)
     {
-        fprintf(stderr, "Error in malloc for 'users' array\n");
+        our_log(ERROR, "Error in malloc for 'users' array");
         return -1;
     }
 
     if (admins == 0)
     {
-        fprintf(stderr, "No admins yet, creating admin with name: admin and password: admin\n");
+        our_log(INFO, "No admins yet, creating admin with name: admin and password: admin");
         new_user("admin", "admin");
         change_status("admin", ADMIN);
     }
