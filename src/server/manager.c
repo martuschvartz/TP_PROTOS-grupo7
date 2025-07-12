@@ -32,6 +32,8 @@ typedef struct
     bool user_sent;
     char username[50];
     bool is_admin;
+
+    fd_selector selector;
 } manager_data;
 
 static void manager_read(struct selector_key *key);
@@ -243,7 +245,7 @@ void handle_command(int client_fd, char *input, manager_data *manager_data)
     else if (strcmp(cmd, "QUIT") == 0)
     {
         send_response(client_fd, "Se cerrará la conexión\r\n", false);
-        close(client_fd);
+        selector_unregister_fd(manager_data->selector, client_fd);
     }
     else
     {
@@ -273,6 +275,7 @@ void manager_passive_accept(struct selector_key *key)
     }
 
     data->fd = client;
+    data->selector = key->s;
 
     if (SELECTOR_SUCCESS != selector_register(key->s, client, &manager_handler, OP_READ, data))
     {

@@ -229,11 +229,11 @@ finally:
 
     // socksv5_pool_destroy();
 
-    if (server >= 0)
-    {
-        close(server);
-    }
     if (manager >= 0)
+    {
+        close(manager);
+    }
+    if (server >= 0)
     {
         close(server);
     }
