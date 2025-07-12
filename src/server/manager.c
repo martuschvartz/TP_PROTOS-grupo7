@@ -39,6 +39,30 @@ typedef struct
 static void manager_read(struct selector_key *key);
 static void manager_close(struct selector_key *key);
 
+// manejo de comandos
+void handle_user(int fd, char *arg1, manager_data *data);
+void handle_pass(int fd, char *arg1, manager_data *data);
+void handle_list(int fd);
+void handle_add_user(int fd, char *user, char *pass);
+void handle_delete_user(int fd, char *user);
+void handle_change_pass(int fd, manager_data *data, char *old_pass, char *new_pass);
+void handle_change_status(int fd, char *user, char *status);
+void handle_stat(int fd);
+void handle_list_user(int fd);
+void handle_quit(manager_data *data);
+void handle_help(int fd);
+void handle_user(int fd, char *arg1, manager_data *data);
+void handle_pass(int fd, char *arg1, manager_data *data);
+void handle_list(int fd);
+void handle_add_user(int fd, char *user, char *pass);
+void handle_delete_user(int fd, char *user);
+void handle_change_pass(int fd, manager_data *data, char *old_pass, char *new_pass);
+void handle_change_status(int fd, char *user, char *status);
+void handle_stat(int fd);
+void handle_list_user(int fd);
+void handle_quit(manager_data *data);
+void handle_help(int fd);
+
 static const struct fd_handler manager_handler = {
     .handle_read = manager_read,
     .handle_write = NULL,
@@ -118,7 +142,6 @@ void handle_auth_command(int client_fd, char *cmd, char *arg1, manager_data *dat
     }
 }
 
-// FALTA MODULARIZAR (@josefina)
 void handle_command(int client_fd, char *input, manager_data *manager_data)
 {
     char *cmd = strtok(input, " ");
@@ -136,75 +159,19 @@ void handle_command(int client_fd, char *input, manager_data *manager_data)
 
     if (strcmp(cmd, "LIST") == 0)
     {
-        const Tuser *ulist = get_users();
-        unsigned int count = get_user_count();
-
-        char msg[1024] = "Usuarios:\r\n";
-        for (unsigned int i = 0; i < count; i++)
-        {
-            strcat(msg, " - ");
-            strcat(msg, ulist[i].name);
-            strcat(msg, "\r\n");
-        }
-        send_response(client_fd, msg, false);
+        handle_list(client_fd);
     }
     else if (strcmp(cmd, "ADD-USER") == 0)
     {
-        if (arg1 && arg2)
-        {
-            if (new_user(arg1, arg2) == 0)
-            {
-                char msg[128];
-                snprintf(msg, sizeof(msg), "Usuario %s agregado\r\n", arg1);
-                send_response(client_fd, msg, false);
-            }
-            else
-            {
-                send_response(client_fd, "No se pudo agregar el usuario\r\n", true);
-            }
-        }
-        else
-        {
-            send_response(client_fd, "Faltan parámetros para ADD-USER\r\n", true);
-        }
+        handle_add_user(client_fd, arg1, arg2);
     }
     else if (strcmp(cmd, "DELETE-USER") == 0)
     {
-        if (arg1)
-        {
-            if (delete_user(arg1) == 0)
-            {
-                char msg[128];
-                snprintf(msg, sizeof(msg), "Usuario %s eliminado\r\n", arg1);
-                send_response(client_fd, msg, false);
-            }
-            else
-            {
-                send_response(client_fd, "No se pudo eliminar el usuario\r\n", true);
-            }
-        }
-        else
-        {
-            send_response(client_fd, "Falta parámetro para DELETE-USER\r\n", true);
-        }
+        handle_delete_user(client_fd, arg1);
     }
     else if (strcmp(cmd, "CHANGE-PASS") == 0)
     {
-        if (arg1 && arg2)
-        {
-            if (change_password(manager_data->username, arg1, arg2) == 0)
-            {
-                send_response(client_fd, "Contraseña actualizada\r\n", false);
-            }
-            else
-            {
-                send_response(client_fd, "No se pudo cambiar la contraseña\r\n", true);
-            }
-        }
-        else
-        {
-            send_response(client_fd, "Faltan parámetros: CHANGE-PASS <vieja> <nueva>\r\n", true);
-        }
+        handle_change_pass(client_fd, manager_data, arg1, arg2);
     }
     else if (strcmp(cmd, "LIST-USER") == 0)
     {
@@ -216,42 +183,23 @@ void handle_command(int client_fd, char *input, manager_data *manager_data)
     }
     else if (strcmp(cmd, "CHANGE-STATUS") == 0)
     {
-        if (arg1 && arg2)
-        {
-            change_status(arg1, strcmp(arg2, "admin") == 0 ? ADMIN : COMMONER);
-            char msg[128];
-            snprintf(msg, sizeof(msg), "Estado de %s cambiado a %s\r\n", arg1, strcmp(arg2, "admin") == 0 ? "admin" : "commoner");
-            send_response(client_fd, msg, false);
-        }
-        else
-        {
-            send_response(client_fd, "Faltan parámetros: CHANGE-STATUS <usuario> <admin|commoner>", true);
-        }
+        handle_change_status(client_fd, arg1, arg2);
     }
     else if (strcmp(cmd, "HELP") == 0)
     {
-        send_response(client_fd,
-                      "Comandos válidos:\r\n"
-                      " - LIST\r\n"
-                      " - ADD-USER <usuario> <clave>\r\n"
-                      " - DELETE-USER <usuario>\r\n"
-                      " - CHANGE-PASS <vieja> <nueva>\r\n"
-                      " - STAT\r\n"
-                      " - CHANGE-STATUS <usuario> <admin|commoner>\r\n"
-                      " - HELP\r\n"
-                      " - QUIT\r\n",
-                      false);
+        handle_help(client_fd);
     }
     else if (strcmp(cmd, "QUIT") == 0)
     {
-        send_response(client_fd, "Se cerrará la conexión\r\n", false);
-        selector_unregister_fd(manager_data->selector, client_fd);
+        handle_quit(manager_data);
     }
     else
     {
         send_response(client_fd, "Comando no reconocido. Escriba HELP\r\n", true);
     }
 }
+
+// conexiones --------------------------------------------------------------
 void manager_passive_accept(struct selector_key *key)
 {
     struct sockaddr_storage client_addr;
@@ -308,4 +256,101 @@ static void manager_close(struct selector_key *key)
         close(data->fd);
         free(data);
     }
+}
+
+// ---------------------------------------------------------------
+
+void handle_list(int fd)
+{
+    const Tuser *ulist = get_users();
+    unsigned int count = get_user_count();
+    char msg[1024] = "Usuarios:\r\n";
+    for (unsigned int i = 0; i < count; i++)
+    {
+        strcat(msg, " - ");
+        strcat(msg, ulist[i].name);
+        strcat(msg, "\r\n");
+    }
+    send_response(fd, msg, false);
+}
+
+void handle_add_user(int fd, char *user, char *pass)
+{
+    if (!user || !pass)
+        return send_response(fd, "Faltan parámetros para ADD-USER\r\n", true);
+    if (new_user(user, pass) == 0)
+    {
+        char msg[128];
+        snprintf(msg, sizeof(msg), "Usuario %s agregado\r\n", user);
+        send_response(fd, msg, false);
+    }
+    else
+    {
+        send_response(fd, "No se pudo agregar el usuario\r\n", true);
+    }
+}
+
+void handle_delete_user(int fd, char *user)
+{
+    if (!user)
+        return send_response(fd, "Falta parámetro para DELETE-USER\r\n", true);
+    if (delete_user(user) == 0)
+    {
+        char msg[128];
+        snprintf(msg, sizeof(msg), "Usuario %s eliminado\r\n", user);
+        send_response(fd, msg, false);
+    }
+    else
+    {
+        send_response(fd, "No se pudo eliminar el usuario\r\n", true);
+    }
+}
+
+void handle_change_pass(int fd, manager_data *data, char *old_pass, char *new_pass)
+{
+    if (!old_pass || !new_pass)
+    {
+        send_response(fd, "Faltan parámetros: CHANGE-PASS <vieja> <nueva>\r\n", true);
+        return;
+    }
+
+    if (change_password(data->username, old_pass, new_pass) == 0)
+    {
+        send_response(fd, "Contraseña actualizada\r\n", false);
+    }
+    else
+    {
+        send_response(fd, "No se pudo cambiar la contraseña\r\n", true);
+    }
+}
+
+void handle_change_status(int fd, char *user, char *status)
+{
+    if (!user || !status)
+        return send_response(fd, "Faltan parámetros: CHANGE-STATUS <usuario> <admin|commoner>", true);
+    change_status(user, strcmp(status, "admin") == 0 ? ADMIN : COMMONER);
+    char msg[128];
+    snprintf(msg, sizeof(msg), "Estado de %s cambiado a %s\r\n", user, strcmp(status, "admin") == 0 ? "admin" : "commoner");
+    send_response(fd, msg, false);
+}
+
+void handle_quit(manager_data *data)
+{
+    send_response(data->fd, "Se cerrará la conexión\r\n", false);
+    selector_unregister_fd(data->selector, data->fd);
+}
+
+void handle_help(int fd)
+{
+    send_response(fd,
+                  "Comandos válidos:\r\n"
+                  " - LIST\r\n"
+                  " - ADD-USER <usuario> <clave>\r\n"
+                  " - DELETE-USER <usuario>\r\n"
+                  " - CHANGE-PASS <vieja> <nueva>\r\n"
+                  " - STAT\r\n"
+                  " - CHANGE-STATUS <usuario> <admin|commoner>\r\n"
+                  " - HELP\r\n"
+                  " - QUIT\r\n",
+                  false);
 }
