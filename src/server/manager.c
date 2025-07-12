@@ -23,6 +23,8 @@ TODO @josefina
 #define OK_MSG(s) OK s
 #define ERR_MSG(s) ERR s
 
+#define MAX_LENGTH_MSG 512
+
 typedef struct
 {
     int fd;
@@ -40,19 +42,6 @@ static void manager_read(struct selector_key *key);
 static void manager_close(struct selector_key *key);
 
 // manejo de comandos
-void handle_user(int fd, char *arg1, manager_data *data);
-void handle_pass(int fd, char *arg1, manager_data *data);
-void handle_list(int fd);
-void handle_add_user(int fd, char *user, char *pass);
-void handle_delete_user(int fd, char *user);
-void handle_change_pass(int fd, manager_data *data, char *old_pass, char *new_pass);
-void handle_change_status(int fd, char *user, char *status);
-void handle_stat(int fd);
-void handle_list_user(int fd);
-void handle_quit(manager_data *data);
-void handle_help(int fd);
-void handle_user(int fd, char *arg1, manager_data *data);
-void handle_pass(int fd, char *arg1, manager_data *data);
 void handle_list(int fd);
 void handle_add_user(int fd, char *user, char *pass);
 void handle_delete_user(int fd, char *user);
@@ -76,7 +65,7 @@ void trim_newline(char *str)
 
 void send_response(int client_fd, const char *msg, bool is_error)
 {
-    char full_msg[BUFFER_SIZE];
+    char full_msg[MAX_LENGTH_MSG];
 
     snprintf(full_msg, sizeof(full_msg), "%s%s", is_error ? ERR : OK, msg);
     send(client_fd, full_msg, strlen(full_msg), 0);
@@ -175,11 +164,11 @@ void handle_command(int client_fd, char *input, manager_data *manager_data)
     }
     else if (strcmp(cmd, "LIST-USER") == 0)
     {
-        send_response(client_fd, "TO-DO\r\n", true);
+        send_response(client_fd, "TO-DO\r\n", true); ///////////////////////////////////////////////////////////////////////////////////////////
     }
     else if (strcmp(cmd, "STAT") == 0)
     {
-        send_response(client_fd, "TO-DO\r\n", true);
+        send_response(client_fd, "TO-DO\r\n", true); //////////////////////////////////////////////////////////////////////////////////////////
     }
     else if (strcmp(cmd, "CHANGE-STATUS") == 0)
     {
@@ -264,11 +253,15 @@ void handle_list(int fd)
 {
     const Tuser *ulist = get_users();
     unsigned int count = get_user_count();
-    char msg[1024] = "Usuarios:\r\n";
+    char msg[1024] = "Usuarios:\r\n"; // dinámico
+
     for (unsigned int i = 0; i < count; i++)
     {
         strcat(msg, " - ");
         strcat(msg, ulist[i].name);
+        strcat(msg, " (");
+        strcat(msg, ulist[i].status == ADMIN ? "admin" : "commoner");
+        strcat(msg, ")");
         strcat(msg, "\r\n");
     }
     send_response(fd, msg, false);
@@ -277,10 +270,10 @@ void handle_list(int fd)
 void handle_add_user(int fd, char *user, char *pass)
 {
     if (!user || !pass)
-        return send_response(fd, "Faltan parámetros para ADD-USER\r\n", true);
+        return send_response(fd, "Faltan parámetros: ADD-USER <nuevo_usuario> <constraseña>\r\n", true);
     if (new_user(user, pass) == 0)
     {
-        char msg[128];
+        char msg[MAX_LENGTH_MSG];
         snprintf(msg, sizeof(msg), "Usuario %s agregado\r\n", user);
         send_response(fd, msg, false);
     }
@@ -296,7 +289,7 @@ void handle_delete_user(int fd, char *user)
         return send_response(fd, "Falta parámetro para DELETE-USER\r\n", true);
     if (delete_user(user) == 0)
     {
-        char msg[128];
+        char msg[MAX_LENGTH_MSG];
         snprintf(msg, sizeof(msg), "Usuario %s eliminado\r\n", user);
         send_response(fd, msg, false);
     }
@@ -329,7 +322,7 @@ void handle_change_status(int fd, char *user, char *status)
     if (!user || !status)
         return send_response(fd, "Faltan parámetros: CHANGE-STATUS <usuario> <admin|commoner>", true);
     change_status(user, strcmp(status, "admin") == 0 ? ADMIN : COMMONER);
-    char msg[128];
+    char msg[MAX_LENGTH_MSG];
     snprintf(msg, sizeof(msg), "Estado de %s cambiado a %s\r\n", user, strcmp(status, "admin") == 0 ? "admin" : "commoner");
     send_response(fd, msg, false);
 }
