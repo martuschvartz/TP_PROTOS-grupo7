@@ -3,12 +3,14 @@
 /*---------------------------------------------------
 
 FALTA:
-    * comandos STAT, LIST-USER, CHANGE-PASS
+    * comandos STAT, LIST-USER,
 
 TODO @josefina
     * autenticación
     * conectar bien los datos reales
     * modularizar y ordenar todo mejor
+
+    * que cuando se liste los usuarios, se muestre el status (y si puede ser más lindo, mejor)
 
 ---------------------------------------------------*/
 
@@ -16,10 +18,10 @@ TODO @josefina
 #define BUFFER_SIZE 1024
 #define MAX_USERS 10
 
-#define OK "+OK"
-#define ERR "-ERR"
-#define OK_MSG(s) OK m "\r\n"
-#define ERR_MSG(s) ERR m "\r\n"
+#define OK "+OK "
+#define ERR "-ERR "
+#define OK_MSG(s) OK s
+#define ERR_MSG(s) ERR s
 
 typedef struct
 {
@@ -46,9 +48,12 @@ void trim_newline(char *str)
     str[strcspn(str, "\r\n")] = 0;
 }
 
-void send_response(int client_fd, const char *msg)
+void send_response(int client_fd, const char *msg, bool is_error)
 {
-    send(client_fd, msg, strlen(msg), 0);
+    char full_msg[BUFFER_SIZE];
+
+    snprintf(full_msg, sizeof(full_msg), "%s%s", is_error ? ERR : OK, msg);
+    send(client_fd, full_msg, strlen(full_msg), 0);
 }
 
 void handle_auth_command(int client_fd, char *cmd, char *arg1, manager_data *data)
@@ -62,23 +67,23 @@ void handle_auth_command(int client_fd, char *cmd, char *arg1, manager_data *dat
             {
                 strncpy(data->username, arg1, sizeof(data->username) - 1);
                 data->user_sent = true;
-                send_response(client_fd, "+OK usuario reconocido, ahora PASS\r\n");
+                send_response(client_fd, "\r\n", false);
             }
             else
             {
-                send_response(client_fd, "-ERR usuario desconocido\r\n");
+                send_response(client_fd, "usuario no reconocido\r\n", true);
             }
         }
         else
         {
-            send_response(client_fd, "-ERR falta nombre de usuario\r\n");
+            send_response(client_fd, "falta nombre de usuario\r\n", true);
         }
     }
     else if (strcmp(cmd, "PASS") == 0)
     {
         if (!data->user_sent)
         {
-            send_response(client_fd, "-ERR primero manda USER\r\n");
+            send_response(client_fd, "primero manda USER\r\n", true);
         }
         else if (arg1)
         {
@@ -92,28 +97,26 @@ void handle_auth_command(int client_fd, char *cmd, char *arg1, manager_data *dat
                     {
                         data->logged_in = true;
                         data->is_admin = true;
-                        send_response(client_fd, "+OK autenticado como admin\r\n");
+                        send_response(client_fd, "autenticado como admin\r\n", false);
                     }
                     else
                     {
-                        send_response(client_fd, "-ERR necesitas ser administrador\r\n");
-                        close(client_fd);
+                        send_response(client_fd, "necesitas ser administrador\r\n", true);
                     }
                 }
             }
             else
-            {
-                send_response(client_fd, "-ERR contraseña incorrecta\r\n"); // seguir intentando???
-            }
+                send_response(client_fd, "contraseña incorrecta\r\n", true);
         }
     }
+
     else
     {
-        send_response(client_fd, "-ERR debes autenticarte primero (USER + PASS)\r\n");
+        send_response(client_fd, "debes autenticarte primero (USER + PASS)\r\n", true);
     }
 }
 
-// FALTA MODULARIZAR, y usar las macros OK_MSG y ERR_MSG (@josefina)
+// FALTA MODULARIZAR (@josefina)
 void handle_command(int client_fd, char *input, manager_data *manager_data)
 {
     char *cmd = strtok(input, " ");
@@ -134,14 +137,14 @@ void handle_command(int client_fd, char *input, manager_data *manager_data)
         const Tuser *ulist = get_users();
         unsigned int count = get_user_count();
 
-        char msg[1024] = "+OK Usuarios:\r\n";
+        char msg[1024] = "Usuarios:\r\n";
         for (unsigned int i = 0; i < count; i++)
         {
             strcat(msg, " - ");
             strcat(msg, ulist[i].name);
             strcat(msg, "\r\n");
         }
-        send_response(client_fd, msg);
+        send_response(client_fd, msg, false);
     }
     else if (strcmp(cmd, "ADD-USER") == 0)
     {
@@ -150,17 +153,17 @@ void handle_command(int client_fd, char *input, manager_data *manager_data)
             if (new_user(arg1, arg2) == 0)
             {
                 char msg[128];
-                snprintf(msg, sizeof(msg), "+OK Usuario %s agregado\r\n", arg1);
-                send_response(client_fd, msg);
+                snprintf(msg, sizeof(msg), "Usuario %s agregado\r\n", arg1);
+                send_response(client_fd, msg, false);
             }
             else
             {
-                send_response(client_fd, "-ERR No se pudo agregar el usuario\r\n");
+                send_response(client_fd, "No se pudo agregar el usuario\r\n", true);
             }
         }
         else
         {
-            send_response(client_fd, "-ERR Faltan parámetros para ADD-USER\r\n");
+            send_response(client_fd, "Faltan parámetros para ADD-USER\r\n", true);
         }
     }
     else if (strcmp(cmd, "DELETE-USER") == 0)
@@ -170,51 +173,81 @@ void handle_command(int client_fd, char *input, manager_data *manager_data)
             if (delete_user(arg1) == 0)
             {
                 char msg[128];
-                snprintf(msg, sizeof(msg), "+OK Usuario %s eliminado\r\n", arg1);
-                send_response(client_fd, msg);
+                snprintf(msg, sizeof(msg), "Usuario %s eliminado\r\n", arg1);
+                send_response(client_fd, msg, false);
             }
             else
             {
-                send_response(client_fd, "-ERR No se pudo eliminar el usuario\r\n");
+                send_response(client_fd, "No se pudo eliminar el usuario\r\n", true);
             }
         }
         else
         {
-            send_response(client_fd, "-ERR Falta parámetro para DELETE-USER\r\n");
+            send_response(client_fd, "Falta parámetro para DELETE-USER\r\n", true);
         }
     }
     else if (strcmp(cmd, "CHANGE-PASS") == 0)
     {
-        send_response(client_fd, "TO-DO\r\n");
+        if (arg1 && arg2)
+        {
+            if (change_password(manager_data->username, arg1, arg2) == 0)
+            {
+                send_response(client_fd, "Contraseña actualizada\r\n", false);
+            }
+            else
+            {
+                send_response(client_fd, "No se pudo cambiar la contraseña\r\n", true);
+            }
+        }
+        else
+        {
+            send_response(client_fd, "Faltan parámetros: CHANGE-PASS <vieja> <nueva>\r\n", true);
+        }
     }
     else if (strcmp(cmd, "LIST-USER") == 0)
     {
-        send_response(client_fd, "TO-DO\r\n");
+        send_response(client_fd, "TO-DO\r\n", true);
     }
     else if (strcmp(cmd, "STAT") == 0)
     {
-        send_response(client_fd, "TO-DO\r\n");
+        send_response(client_fd, "TO-DO\r\n", true);
+    }
+    else if (strcmp(cmd, "CHANGE-STATUS") == 0)
+    {
+        if (arg1 && arg2)
+        {
+            change_status(arg1, strcmp(arg2, "admin") == 0 ? ADMIN : COMMONER);
+            char msg[128];
+            snprintf(msg, sizeof(msg), "Estado de %s cambiado a %s\r\n", arg1, strcmp(arg2, "admin") == 0 ? "admin" : "commoner");
+            send_response(client_fd, msg, false);
+        }
+        else
+        {
+            send_response(client_fd, "Faltan parámetros: CHANGE-STATUS <usuario> <admin|commoner>", true);
+        }
     }
     else if (strcmp(cmd, "HELP") == 0)
     {
         send_response(client_fd,
-                      "+OK Comandos válidos:\r\n"
+                      "Comandos válidos:\r\n"
                       " - LIST\r\n"
                       " - ADD-USER <usuario> <clave>\r\n"
                       " - DELETE-USER <usuario>\r\n"
                       " - CHANGE-PASS <vieja> <nueva>\r\n"
                       " - STAT\r\n"
+                      " - CHANGE-STATUS <usuario> <admin|commoner>\r\n"
                       " - HELP\r\n"
-                      " - QUIT\r\n");
+                      " - QUIT\r\n",
+                      false);
     }
     else if (strcmp(cmd, "QUIT") == 0)
     {
-        send_response(client_fd, "+OK chau\r\n");
+        send_response(client_fd, "Se cerrará la conexión\r\n", false);
         close(client_fd);
     }
     else
     {
-        send_response(client_fd, "-ERR Comando no reconocido. Escriba HELP\r\n");
+        send_response(client_fd, "Comando no reconocido. Escriba HELP\r\n", true);
     }
 }
 void manager_passive_accept(struct selector_key *key)
@@ -222,7 +255,7 @@ void manager_passive_accept(struct selector_key *key)
     struct sockaddr_storage client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
     int client = accept(key->fd, (struct sockaddr *)&client_addr, &client_addr_len);
-    send_response(client, "+OK Dory monitoreo :) \r\n");
+    send_response(client, "Dory v1.0\r\n", false);
     if (client < 0)
         return;
 

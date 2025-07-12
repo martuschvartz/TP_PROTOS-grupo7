@@ -14,15 +14,17 @@ int new_user(const char *name, const char *pass)
 {
 
     // Chequear que name y pass no estén vacíos
-    if (name == NULL || name[0] == '\0') {
+    if (name == NULL || name[0] == '\0')
+    {
         fprintf(stderr, "Username must have at least one character.\n");
         return -1;
     }
-    if (pass == NULL || pass[0] == '\0') {
+    if (pass == NULL || pass[0] == '\0')
+    {
         fprintf(stderr, "Password must have at least one character.\n");
         return -1;
     }
-    
+
     if (user_exists(name) >= 0)
     {
         fprintf(stderr, "Username is already in use, please choose another name.\n");
@@ -48,36 +50,35 @@ int new_user(const char *name, const char *pass)
 
 void change_status(const char *name, int newStatus)
 {
-
     int index = user_exists(name);
-
     if (index < 0)
     {
         fprintf(stderr, "This user does not exist. C\n");
         return;
     }
 
-    if (users[index].status == newStatus)
+    int oldStatus = users[index].status;
+
+    if (oldStatus == newStatus)
     {
         return;
     }
 
-    // TODO chequeo de status del q pide la acción
-    // preguntarle a las chicas si sus protocolos guarda q usuario esta iniciado sesión
-
     users[index].status = newStatus;
-    if (newStatus == ADMIN)
-    {
-        admins++;
-    }
-    if (newStatus == COMMONER)
+
+    if (oldStatus == ADMIN && newStatus != ADMIN)
     {
         admins--;
     }
+    else if (oldStatus != ADMIN && newStatus == ADMIN)
+    {
+        admins++;
+    }
 }
 
-int change_password(const char *name, const char *old, const char *new){
-    
+int change_password(const char *name, const char *old, const char *new)
+{
+
     int index = user_exists(name);
     if (index == -1)
     {
@@ -96,7 +97,6 @@ int change_password(const char *name, const char *old, const char *new){
     fprintf(stderr, "The password is incorrect.\n");
     return -1;
 }
-
 
 int delete_user(const char *name)
 {
@@ -130,7 +130,7 @@ int delete_user(const char *name)
 
 int init_users()
 {
-    users = NULL; //hmmmm TODO
+    users = NULL; // hmmmm TODO
     cantUsers = 0;
 
     users = malloc(MAX_USERS * sizeof(Tuser));
