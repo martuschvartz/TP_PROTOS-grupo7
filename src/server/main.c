@@ -36,13 +36,26 @@ static void sigterm_handler(const int signal)
  *  @param res_address_length, address length result
  *  returns 1 error, 0 on success
  */
-int set_server_sock_address(int port, void *res_address, int *res_address_length)
+int set_server_sock_address(int port, void *res_address, int *res_address_length, char * sock_addrs)
 {
-    // acá tmb ipv6 TODO
+    //si es ipv6 tiene ':'
+    int ipv6 = strchr(sock_addrs, ':');
+    if(ipv6){
+        struct sockaddr_in6 sock_ipv6;
+        memset(&sock_ipv6, 0, sizeof(sock_ipv6));
+        sock_ipv6.sin6_family= AF_INET6;
+        inet_pton(AF_INET6, sock_addrs, &sock_ipv6.sin6_addr); //convertimos a binario para q sea utilizable
+        sock_ipv6.sin6_port= htons(port);
+
+        *((struct sockaddr_in6 *)res_address) = sock_ipv6;
+        *res_address_length = sizeof(sock_ipv6);
+        return 0;
+    }
+
     struct sockaddr_in sock_ipv4;
     memset(&sock_ipv4, 0, sizeof(sock_ipv4));
     sock_ipv4.sin_family = AF_INET;
-    sock_ipv4.sin_addr.s_addr = htonl(INADDR_ANY);
+    inet_pton(AF_INET, sock_addrs, &sock_ipv4.sin_addr.s_addr); //convertimos a binario para q sea utilizable
     sock_ipv4.sin_port = htons(port);
 
     *((struct sockaddr_in *)res_address) = sock_ipv4;
@@ -72,7 +85,7 @@ int main(int argc, char **argv)
         new_user(socksArgs.users[i].name, socksArgs.users[i].pass);
     }
 
-    if (set_server_sock_address(socksArgs.socks_port, &server_addr, &server_addr_len))
+    if (set_server_sock_address(socksArgs.socks_port, &server_addr, &server_addr_len, socksArgs.socks_addr))
     {
         err_msg = "Invalid server socket address";
         goto finally;
@@ -108,7 +121,7 @@ int main(int argc, char **argv)
     memset(&manager_addr, 0, sizeof(manager_addr));
     manager_addr_len = sizeof(manager_addr);
 
-    if (set_server_sock_address(socksArgs.mng_port, &manager_addr, &manager_addr_len))
+    if (set_server_sock_address(socksArgs.mng_port, &manager_addr, &manager_addr_len, socksArgs.socks_addr))
     {
         err_msg = "Invalid manager socket address";
         goto finally;
