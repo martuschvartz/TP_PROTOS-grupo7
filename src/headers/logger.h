@@ -21,17 +21,11 @@ void sb_free(StringBuilder *sb);
 int sb_append(StringBuilder *sb, const char *str);
 const char *sb_get_string(const StringBuilder *sb);
 
-void create_sbs();
-
+void create_logs_sb();
 int logs_append(char *str) ;
 void log_free();
 const char *get_logs(); 
 void our_log(LOG_TYPE type, const char* msg);
 void set_log_type(LOG_TYPE new);
-
-int access_append(char *str);
-void access_free();
-const char *get_access();
-
 
 #endif

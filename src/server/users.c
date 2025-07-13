@@ -7,7 +7,6 @@
 #include <errno.h>
 #include <getopt.h>
 #include "args.h"
-#include "logger.h"
 
 static unsigned int cantUsers, admins;
 
@@ -45,7 +44,8 @@ int new_user(const char *name, const char *pass)
     strncpy(users[cantUsers].name, name, MAX_LENGTH);
     memset(users[cantUsers].pass, 0, MAX_LENGTH + 1);
     strncpy(users[cantUsers].pass, pass, MAX_LENGTH);
-
+    StringBuilder *user_access = sb_create();
+    users[cantUsers].access = user_access;
     users[cantUsers].status = COMMONER;
     cantUsers++;
 
@@ -79,9 +79,6 @@ void change_status(const char *name, int newStatus)
         return;
     }
 
-    // TODO chequeo de status del q pide la acción
-    // preguntarle a las chicas si sus protocolos guarda q usuario esta iniciado sesión
-
     users[index].status = newStatus;
     if (newStatus == ADMIN)
     {
@@ -103,7 +100,8 @@ int change_password(const char *name, const char *old, const char *new){
         sb_append(sb, name);
         sb_append(sb, ", does not exist.\n");
         our_log(WARNING, sb_get_string(sb));
-        sb_free(sb);        return -1;
+        sb_free(sb);        
+        return -1;
     }
 
     // Check pass
@@ -130,7 +128,8 @@ int delete_user(const char *name)
         sb_append(sb, name);
         sb_append(sb, ", does not exist.\n");
         our_log(WARNING, sb_get_string(sb));
-        sb_free(sb);        return -1;
+        sb_free(sb);        
+        return -1;
     }
 
     if (users[index].status == ADMIN)
@@ -147,6 +146,9 @@ int delete_user(const char *name)
         }
         admins--;
     }
+
+    //le hago el free correspondiente a su sb
+    sb_free(users[index].access);
 
     for (int i = index; i < cantUsers - 1; i++)
     { // piso el user borrado
@@ -178,6 +180,13 @@ int init_users()
 
 int close_users()
 {
+    //en el caso de que queden users, libero sus access
+    for(int i=0; i<cantUsers; i++){
+        if (users[i].access != NULL) {
+            sb_free(users[i].access);
+        }
+    }
+
     free(users);
     return 0;
 }
@@ -185,14 +194,24 @@ int close_users()
 int user_login(const char *name, const char *password)
 {
     int index = user_exists(name);
-    if (index == -1)
+    if (index < 0)
     {
+        StringBuilder *sb = sb_create();
+        sb_append(sb, "User ");
+        sb_append(sb, name);
+        sb_append(sb, ", does not exist.\n");
+        our_log(WARNING, sb_get_string(sb));
+        sb_free(sb);        
         return -1;
     }
 
     // Check pass
     if (strcmp(users[index].pass, password) == 0)
     {
+        StringBuilder *sb = sb_create();
+        sb_append(sb, "Wrong password");
+        our_log(WARNING, sb_get_string(sb));
+        sb_free(sb); 
         return 0;
     }
 
@@ -219,4 +238,21 @@ const Tuser *get_users()
 unsigned int get_user_count()
 {
     return cantUsers;
+}
+
+StringBuilder* get_access(const char* name){
+    int index = user_exists(name);
+
+    if (index < 0)
+    {
+        StringBuilder *sb = sb_create();
+        sb_append(sb, "User ");
+        sb_append(sb, name);
+        sb_append(sb, ", does not exist.\n");
+        our_log(WARNING, sb_get_string(sb));
+        sb_free(sb);        
+        return -1;
+    }
+
+    return users[index].access;
 }

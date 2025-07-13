@@ -4,7 +4,6 @@
 
 static unsigned int current_type = INFO;
 StringBuilder *log_sb;
-StringBuilder *access;
 
 StringBuilder *sb_create() {
     StringBuilder *sb = malloc(sizeof(StringBuilder));
@@ -56,7 +55,7 @@ const char *sb_get_string(const StringBuilder *sb) {
     return sb->buffer;
 }
 
-void create_sbs() {
+void create_logs_sb() {
     //inicializamos el string de logs
     log_sb = malloc(sizeof(StringBuilder));
     if (!log_sb) return ;
@@ -69,18 +68,6 @@ void create_sbs() {
     log_sb->length = 0;
     log_sb->capacity = SB_INITIAL_CAPACITY;
     log_sb->buffer[0] = '\0';  // string vacío válido
-
-    //también inicializamos access
-    access = malloc(sizeof(StringBuilder));
-    if(!access) return ;
-    access->buffer = malloc(SB_INITIAL_CAPACITY);
-    if(!access->buffer){
-        free(access);
-        return ;
-    }
-    access->length=0;
-    access->capacity= SB_INITIAL_CAPACITY;
-    access->buffer[0]= '\0';
 }
 
 int logs_append(char *str ) {
@@ -141,69 +128,6 @@ void set_log_type(LOG_TYPE new){
         current_type=new;
     }
 }
-
-int access_append(char *str){
-    size_t str_len = strlen(str);
-    size_t needed = access->length + str_len + 1; 
-
-    // Si no alcanza, hacemos realloc
-    if (needed > access->capacity) {
-        size_t new_capacity = access->capacity * 2;
-        while (new_capacity < needed)
-            new_capacity *= 2;
-
-        char *new_buffer = realloc(access->buffer, new_capacity);
-        if (!new_buffer) return -1;
-
-        access->buffer = new_buffer;
-        access->capacity = new_capacity;
-    }
-
-    memcpy(access->buffer + access->length, str, str_len + 1);
-    access->length += str_len;
-
-    return 0;
-}
-
-const char *get_access(){
-    return access->buffer;
-}
-
-void access_free() {
-    if (access) {
-        free(access->buffer);
-        free(access);
-    }
-}
-
-/*
-REGISTRO DE ACCESO
-    Registra  el  uso  del  proxy en salida estandar. Una conexión por línea. 
-    Los campos de una línea separado por
-    tabs:
-
-    fecha  que se procesó la conexión en formato ISO-8601.  Ejemplo 2025-06-10T19:56:34Z.
-
-    nombre de usuario
-            que hace el requerimiento.  Ejemplo pepe.
-
-    tipo de registro
-            Siempre el caracter A.
-
-    direccion IP origen
-            desde donde se conectó el usuario.  Ejemplo ::1.
-
-    puerto origen
-            desde donde se conectó el usuario.  Ejemplo 54786.
-
-    destino
-            a donde nos conectamos. nombre o dirección IP (según ATY).  Ejemplo www.itba.edu.ar.  Ejemplo ::1.
-
-    puerto destino
-            Ejemplo 443.
-
-    status Status code de SOCKSv5. Ejemplo 0.
-*/
 
 const char* type_to_string(LOG_TYPE type) {
     switch (type) {
