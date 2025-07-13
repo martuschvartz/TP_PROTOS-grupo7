@@ -37,4 +37,6 @@ const Tuser *get_users();
 
 unsigned int get_user_count();
 
+StringBuilder* get_access(const char* name);
+
 #endif

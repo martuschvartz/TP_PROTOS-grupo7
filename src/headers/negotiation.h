@@ -6,6 +6,7 @@
 #include <sys/socket.h>
 #include <stdio.h>
 #include "metrics.h"
+#include "logger.h"
 
 void negotiation_read_init(const unsigned state, selector_key * key);
 
