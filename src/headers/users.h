@@ -15,7 +15,7 @@ typedef struct
     StringBuilder *access;
 } Tuser;
 
-Tuser *users; // lista de usuarios
+extern Tuser *users; // lista de usuarios
 
 int new_user(const char *name, const char *pass);
 

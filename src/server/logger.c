@@ -70,7 +70,7 @@ void create_logs_sb() {
     log_sb->buffer[0] = '\0';  // string vacío válido
 }
 
-int logs_append(char *str ) {
+int logs_append(const char *str ) {
     size_t str_len = strlen(str);
     size_t needed = log_sb->length + str_len + 1; 
 
@@ -137,4 +137,43 @@ const char* type_to_string(LOG_TYPE type) {
         case FATAL:   return "FATAL";
         default:      return "UNKNOWN";
     }
+}
+
+char* int_to_string(int num) {
+    int isNegative = 0;
+    int temp = num;
+    int len = 0;
+
+    if (num == 0) {
+        char *zero = malloc(2);
+        if (!zero) return NULL;
+        zero[0] = '0';
+        zero[1] = '\0';
+        return zero;
+    }
+    if (num < 0) {
+        isNegative = 1;
+        temp = -temp;
+    }
+    int n = temp;
+    while (n != 0) {
+        n /= 10;
+        len++;
+    }
+
+    char *str = malloc(len + isNegative + 1);  
+    if (!str) return NULL;
+
+    int i = len + isNegative - 1; 
+    str[i + 1] = '\0';
+
+    while (temp != 0) {
+        str[i--] = (temp % 10) + '0';
+        temp /= 10;
+    }
+
+    if (isNegative)
+        str[0] = '-';
+
+    return str;
 }

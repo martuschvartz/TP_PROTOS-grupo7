@@ -9,6 +9,7 @@
 #include "args.h"
 
 static unsigned int cantUsers, admins;
+Tuser *users; // lista de usuarios
 
 int new_user(const char *name, const char *pass)
 {
@@ -251,7 +252,7 @@ StringBuilder* get_access(const char* name){
         sb_append(sb, ", does not exist.\n");
         our_log(WARNING, sb_get_string(sb));
         sb_free(sb);        
-        return -1;
+        return NULL;
     }
 
     return users[index].access;

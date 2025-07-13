@@ -23,7 +23,12 @@ static bool done = false;
 
 static void sigterm_handler(const int signal)
 {
-    printf("signal %d, cleaning up and exiting\n", signal);
+    StringBuilder *sb = sb_create();
+    sb_append(sb, "Signal ");
+    sb_append(sb, int_to_string(signal));
+    sb_append(sb, ", cleaning up and exiting");
+    our_log(INFO, sb_get_string(sb));
+    sb_free(sb);
     done = true;
 }
 
@@ -39,7 +44,7 @@ static void sigterm_handler(const int signal)
 int set_server_sock_address(int port, void *res_address, int *res_address_length, char * sock_addrs)
 {
     //si es ipv6 tiene ':'
-    int ipv6 = strchr(sock_addrs, ':');
+    int ipv6 = strchr(sock_addrs, ':') != NULL;
     if(ipv6){
         struct sockaddr_in6 sock_ipv6;
         memset(&sock_ipv6, 0, sizeof(sock_ipv6));
@@ -114,7 +119,11 @@ int main(int argc, char **argv)
 
     /* --------------------------------------------------------------------------------*/
 
-    fprintf(stdout, "Listening on TCP port %d\n", socksArgs.socks_port);
+    StringBuilder *sb = sb_create();
+    sb_append(sb, "Listening on TCP port ");
+    sb_append(sb, int_to_string(socksArgs.socks_port));
+    our_log(INFO, sb_get_string(sb));
+    sb_free(sb);
 
     struct sockaddr_storage manager_addr;
     int manager_addr_len;
@@ -148,7 +157,11 @@ int main(int argc, char **argv)
         goto finally;
     }
 
-    fprintf(stdout, "Listening on TCP port %d\n", socksArgs.mng_port);
+    StringBuilder *sb2 = sb_create();
+    sb_append(sb2, "Listening on TCP port ");
+    sb_append(sb2, int_to_string(socksArgs.mng_port));
+    our_log(INFO, sb_get_string(sb2));
+    sb_free(sb2);
 
     /* ------------------------------------------------------------------------------*/
 
@@ -224,10 +237,12 @@ finally:
     
     if (selector_status != SELECTOR_SUCCESS)
     {
-        fprintf(stderr, "%s: %s\n", (err_msg == NULL) ? "" : err_msg,
-                selector_status == SELECTOR_IO
-                    ? strerror(errno)
-                    : selector_error(selector_status));
+        StringBuilder *sb = sb_create();
+        sb_append(sb, (err_msg == NULL) ? "" : err_msg);
+        sb_append(sb, ": ");
+        sb_append(sb, selector_status == SELECTOR_IO ? strerror(errno) : selector_error(selector_status));
+        our_log(ERROR, sb_get_string(sb));
+        sb_free(sb);
         ret = 2;
     }
     else if (err_msg)
