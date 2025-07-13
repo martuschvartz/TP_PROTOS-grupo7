@@ -25,7 +25,7 @@ unsigned authentication_read(selector_key * key) {
     auth_parse(&data->handshake.authentication_parser, &data->client_to_sv);
 
     if (is_auth_done(&data->handshake.authentication_parser)) {
-        if ( auth_generate_response(&data->handshake.authentication_parser, &data->sv_to_client) ||   selector_set_interest_key(key, OP_WRITE) != SELECTOR_SUCCESS) {
+        if ( auth_generate_response(&data->handshake.authentication_parser, &data->sv_to_client) || selector_set_interest_key(key, OP_WRITE) != SELECTOR_SUCCESS) {
             return SOCKS_ERROR;
         }
         return AUTH_WRITE;
@@ -53,5 +53,5 @@ unsigned authentication_write(selector_key * key) {
         return SOCKS_ERROR;
     }
 
-    return ECHO_READ;
+    return REQ_READ;
 }

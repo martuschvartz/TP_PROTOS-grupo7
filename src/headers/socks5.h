@@ -10,6 +10,7 @@
 #include <authentication_parser.h>
 #include <sys/socket.h>
 #include <request_parser.h>
+#include <netdb.h>
 
 /** obtiene el struct (client_data *) desde la llave de selección  */
 #define ATTACHMENT(key) ( (struct client_data *)(key)->data)
@@ -153,7 +154,7 @@ typedef struct client_data{
     buffer sv_to_client;
     uint8_t sv_to_client_raw[BUFFER_SIZE];
 
-
+    struct addrinfo * origin_addr;
 
 
 }client_data;

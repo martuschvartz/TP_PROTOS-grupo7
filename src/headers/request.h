@@ -8,6 +8,6 @@ unsigned request_read(selector_key * key);
 
 unsigned request_write(selector_key * key);
 
-//for connection?
+unsigned request_resolve(selector_key * key);
 
 #endif //REQUEST_H

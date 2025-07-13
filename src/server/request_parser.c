@@ -64,6 +64,7 @@ void req_parse_dst_addr_length(req_parser *rp, uint8_t dn_length) {
     if (dn_length > MAX_ADDR_LENGTH) {
         rp->current_state = REQ_ERROR;
         rp->connection_status = CON_OTHER;
+        return;
     }
     rp->addr_len = dn_length;
     rp->current_state = REQ_DST_ADDR;
@@ -136,6 +137,7 @@ void req_parse(req_parser *rp, buffer *buffer) {
                 break;
             default:
                 //log error?
+                break;
         }
     }
 }
