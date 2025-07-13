@@ -121,7 +121,8 @@ static client_data * socks5_new(int client_fd){
         new_client->stm.max_state = SOCKS_ERROR;
         new_client->stm.states = client_actions;
         new_client->client_fd = client_fd;
-        buffer_init(&new_client->client.echo.bf, BUFFER_SIZE, new_client->client.echo.bf_raw);
+        buffer_init(&new_client->client_to_sv, BUFFER_SIZE, new_client->client_to_sv_raw);
+        buffer_init(&new_client->sv_to_client, BUFFER_SIZE, new_client->sv_to_client_raw);
         stm_init(&new_client->stm);
     }
 
