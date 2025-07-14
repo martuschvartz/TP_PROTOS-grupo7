@@ -49,6 +49,7 @@ static unsigned handle_request(selector_key * key) {
         data->origin_addr->ai_addr = (struct sockaddr *)sockaddr;
         data->origin_addr->ai_addrlen = sizeof(*sockaddr);
 
+        data->current_origin_addr = data->origin_addr;
         return initiate_origin_connection(key);
     }
     if (atyp == IPV6) {
@@ -71,17 +72,15 @@ static unsigned handle_request(selector_key * key) {
         data->origin_addr->ai_addr = (struct sockaddr *)sockaddr;
         data->origin_addr->ai_addrlen = sizeof(*sockaddr);
 
-        if (selector_set_interest_key(key, OP_WRITE) != SELECTOR_SUCCESS) {
-            return SOCKS_ERROR;
-        }
+        data->current_origin_addr = data->origin_addr;
+
         return initiate_origin_connection(key);
     }
     pthread_t thread_id;
     resolve_job * job = malloc(sizeof(resolve_job));
     if (job == NULL) {
         fprintf(stderr, "failed to allocate job struct\n");
-        rp.current_state = CON_SERVER_FAILURE;
-        return REQ_WRITE;
+        return req_generate_response_error(key, CON_SERVER_FAILURE);
     }
     job->selector = key->s;
     job->client_fd = key->fd;
@@ -189,6 +188,8 @@ static void* request_resolve_domain_name(void* arg) {
         data->origin_addr = NULL;
     }
 
+    data->current_origin_addr = data->origin_addr;
+
     if (selector_notify_block(rs->selector, rs->client_fd)) {
         fprintf(stderr, "failed to notify selector of blocking job completion\n");
     }
@@ -215,7 +216,7 @@ static unsigned initiate_origin_connection(selector_key * key) {
         data->origin_fd = -1;
     }
 
-    struct addrinfo * address = data->origin_addr;
+    struct addrinfo * address = data->current_origin_addr;
     if (address == NULL) {
         data->origin_fd = -1;
         return req_generate_response_error(key, CON_HOST_UNREACHABLE);
@@ -270,11 +271,6 @@ static unsigned initiate_origin_connection(selector_key * key) {
     return initiate_origin_connection(key);
 }
 
-void request_connect_init(const unsigned state, selector_key * key) {
-    client_data * data = ATTACHMENT(key);
-    data->current_origin_addr = data->origin_addr;
-}
-
 unsigned request_connect(selector_key * key) {
     fprintf(stdout, "Request Connect (on_write_ready) Started\n");
     client_data * data = ATTACHMENT(key);
@@ -289,9 +285,14 @@ unsigned request_connect(selector_key * key) {
     if (error == 0) {
         rp->connection_status = CON_SUCCEEDED;
 
-        // free addrinfo -> check for others
+
         if (data->origin_addr != NULL) {
-            freeaddrinfo(data->origin_addr);
+            if (data->handshake.request_parser.atyp != DN) {
+                free(data->origin_addr->ai_addr);
+                free(data->origin_addr);
+            }else {
+                freeaddrinfo(data->origin_addr);
+            }
             data->origin_addr = NULL;
             data->current_origin_addr = NULL;
         }
@@ -300,7 +301,6 @@ unsigned request_connect(selector_key * key) {
             return SOCKS_ERROR;
         }
 
-        // set interest al origin fd?
         if (selector_set_interest(key->s, data->origin_fd, OP_READ) != SELECTOR_SUCCESS) {
             return SOCKS_ERROR;
         }

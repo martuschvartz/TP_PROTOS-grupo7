@@ -50,7 +50,6 @@ static const struct state_definition client_actions[] = {
     },
     {
         .state              = REQ_CONNECT,
-        .on_arrival         = request_connect_init,
         .on_write_ready     = request_connect,
     },
     {
@@ -83,7 +82,16 @@ static void socksv5_destroy(client_data* data) {
     if (data == NULL) {
         return;
     }
-    // todo clean other things?
+    if (data->origin_addr != NULL) {
+        if (data->handshake.request_parser.atyp != DN) {
+            free(data->origin_addr->ai_addr);
+            free(data->origin_addr);
+        }else {
+            freeaddrinfo(data->origin_addr);
+        }
+        data->origin_addr = NULL;
+        data->current_origin_addr = NULL;
+    }
     free(data);
 }
 

@@ -18,8 +18,6 @@ unsigned request_write(selector_key * key);
 
 unsigned request_resolve(selector_key * key);
 
-void request_connect_init(const unsigned state, selector_key * key);
-
 unsigned request_connect(selector_key * key);
 
 #endif //REQUEST_H
