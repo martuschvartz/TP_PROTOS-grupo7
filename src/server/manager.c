@@ -363,7 +363,7 @@ void handle_list_user(int fd, char *user)
     }
 
     const Tuser *u = &get_users()[index];
-    char msg[2048]; // buffer para el mensaje
+    char msg[2048];
     memset(msg, 0, sizeof(msg));
 
     if (u->access != NULL)
