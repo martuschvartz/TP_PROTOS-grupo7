@@ -114,19 +114,9 @@ enum socks_v5state {
      *
      */
     REQ_WRITE,
-    //
-    // SOCKS5_READ,
-    //
-    // SOCKS5_WRITE,
-    //
-    // SOCKS5_BLOCK,
-    //
-    // SOCKS5_CLOSE,
 
-    // for testing purposes
-    ECHO_READ,
-
-    ECHO_WRITE,
+    COPY_READ,
+    COPY_WRITE,
 
     // estados terminales
     SOCKS_DONE,

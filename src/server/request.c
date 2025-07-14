@@ -46,6 +46,7 @@ static unsigned handle_request(selector_key * key) {
         sockaddr->sin_port = htons(rp.port);
 
         data->origin_addr->ai_family = AF_INET;
+        data->origin_addr->ai_socktype = SOCK_STREAM;
         data->origin_addr->ai_addr = (struct sockaddr *)sockaddr;
         data->origin_addr->ai_addrlen = sizeof(*sockaddr);
 
@@ -69,6 +70,7 @@ static unsigned handle_request(selector_key * key) {
         sockaddr->sin6_port = htons(rp.port);
 
         data->origin_addr->ai_family = AF_INET6;
+        data->origin_addr->ai_socktype = SOCK_STREAM;
         data->origin_addr->ai_addr = (struct sockaddr *)sockaddr;
         data->origin_addr->ai_addrlen = sizeof(*sockaddr);
 
@@ -163,7 +165,7 @@ unsigned request_write(selector_key * key) {
         return SOCKS_ERROR;
     }
 
-    return SOCKS_DONE;
+    return COPY_READ;
 }
 
 static void* request_resolve_domain_name(void* arg) {

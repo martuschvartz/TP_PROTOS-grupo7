@@ -2,7 +2,7 @@
 #include <sys/socket.h>
 #include <selector.h>
 #include <stdlib.h>
-#include <echo.h>
+#include <copy.h>
 #include <stdio.h>
 #include <negotiation.h>
 #include <authentication.h>
@@ -57,12 +57,12 @@ static const struct state_definition client_actions[] = {
         .on_write_ready     = request_write,
     },
     {
-        .state              = ECHO_READ,
-        .on_read_ready      = echo_read,
+        .state              = COPY_READ,
+        .on_read_ready      = copy_read,
     },
     {
-        .state              = ECHO_WRITE,
-        .on_write_ready     = echo_write,
+        .state              = COPY_WRITE,
+        .on_write_ready     = copy_write,
     },
     {
         .state              = SOCKS_DONE,
