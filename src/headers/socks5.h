@@ -6,8 +6,11 @@
 #include <defaults.h>
 #include <stm.h>
 #include <negotiation_parser.h>
-#include "metrics.h"
+#include <metrics.h>
 #include <authentication_parser.h>
+#include <sys/socket.h>
+#include <request_parser.h>
+#include <netdb.h>
 
 /** obtiene el struct (client_data *) desde la llave de selección  */
 #define ATTACHMENT(key) ( (struct client_data *)(key)->data)
@@ -65,52 +68,52 @@ enum socks_v5state {
      *   - ERROR            ante cualquier error (IO/parseo)
      */
     AUTH_WRITE,
-    //
-    // /**
-    //  * Lee y procesa la request del cliente
-    //  *
-    //  * Intereses:
-    //  *     - OP_READ sobre client_fd
-    //  *
-    //  * Transiciones:
-    //  *   - REQ_READ         mientras el mensaje no esté completo
-    //  *   - REQ_RESOLVE      cuando está completo y se precise resolver un nombre de dominio
-    //  *   - REQ_CONNECT      cuando está completo y no se precisa resolver un nombre de dominio
-    //  *   - REQ_WRITE        ante cualquier problema de la request
-    //  *   - ERROR            ante cualquier error (IO/parseo)
-    //  */
-    // REQ_READ,
-    //
-    // /**
-    //  * Resuelve el nombre de dominio
-    //  *
-    //  * Intereses:
-    //  *     - OP_NOOP sobre client_fd
-    //  *
-    //  * Transiciones:
-    //  *   - REQ_CONNECT      si se pudo resolver exitosamente
-    //  *   - REQ_WRITE        cuando está completo
-    //  */
-    // REQ_RESOLVE,
-    //
-    // /**
-    //  *  Realiza la conección con el origin
-    //  *
-    //  *  Intereses:
-    //  *      - OP_WRITE sobre client_fd
-    //  *
-    //  *  Transiciones:
-    //  *    - REQ_WRITE       cuando la conexión fue establecida
-    //  */
-    // REQ_CONNECT,
-    //
-    // /**
-    //  *  Envía la respuesta de la conexión al cliente
-    //  *
-    //  *  Intereses:
-    //  *
-    //  */
-    // REQ_WRITE,
+
+    /**
+     * Lee y procesa la request del cliente
+     *
+     * Intereses:
+     *     - OP_READ sobre client_fd
+     *
+     * Transiciones:
+     *   - REQ_READ         mientras el mensaje no esté completo
+     *   - REQ_RESOLVE      cuando está completo y se precise resolver un nombre de dominio
+     *   - REQ_CONNECT      cuando está completo y no se precisa resolver un nombre de dominio
+     *   - REQ_WRITE        ante cualquier problema de la request
+     *   - ERROR            ante cualquier error (IO/parseo)
+     */
+    REQ_READ,
+
+    /**
+     * Resuelve el nombre de dominio
+     *
+     * Intereses:
+     *     - OP_NOOP sobre client_fd
+     *
+     * Transiciones:
+     *   - REQ_CONNECT      si se pudo resolver exitosamente
+     *   - REQ_WRITE        cuando está completo
+     */
+    REQ_RESOLVE,
+
+    /**
+     *  Realiza la conección con el origin
+     *
+     *  Intereses:
+     *      - OP_WRITE sobre client_fd
+     *
+     *  Transiciones:
+     *    - REQ_WRITE       cuando la conexión fue establecida
+     */
+    REQ_CONNECT,
+
+    /**
+     *  Envía la respuesta de la conexión al cliente
+     *
+     *  Intereses:
+     *
+     */
+    REQ_WRITE,
     //
     // SOCKS5_READ,
     //
@@ -132,39 +135,32 @@ enum socks_v5state {
 
 
 // test purposes, doesn´t need parser
-typedef struct echo_st{
-    buffer bf;
-    uint8_t bf_raw[BUFFER_SIZE];
-} echo_st;
-
-typedef struct negotiation_st {
-    buffer bf;
-    uint8_t bf_raw[BUFFER_SIZE];
-    neg_parser parser;
-} negotiation_st;
-
-typedef struct authentication_st {
-    buffer bf;
-    uint8_t bf_raw[BUFFER_SIZE];
-    auth_parser parser;
-} authentication_st;
 
 typedef struct client_data{
     struct state_machine stm;
 
-    // estados para el client_fd
+    // parsers para el handshake
     union{
-        echo_st echo;
-        negotiation_st negotiation;
-        authentication_st authentication;
-    } client;
+        neg_parser negotiation_parser;
+        auth_parser authentication_parser;
+        req_parser request_parser;
+    } handshake;
 
     int client_fd;
+    buffer client_to_sv;
+    uint8_t client_to_sv_raw[BUFFER_SIZE];
 
-    // estados para el origin_fd
+    int origin_fd;
+    buffer sv_to_client;
+    uint8_t sv_to_client_raw[BUFFER_SIZE];
+
+    struct addrinfo * origin_addr;
+    struct addrinfo * current_origin_addr;
 
 }client_data;
 
 void socks_v5_passive_accept(selector_key * selector_key);
+
+fd_handler * get_socks5_handlers();
 
 #endif

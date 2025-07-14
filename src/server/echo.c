@@ -11,8 +11,8 @@ unsigned int echo_read(selector_key *key)
     puts("im readng");
     client_data *client_data = ATTACHMENT(key);
     size_t available;
-    uint8_t *ptr = buffer_write_ptr(&client_data->client.echo.bf, &available);
-    if (!buffer_can_write(&client_data->client.echo.bf)) {
+    uint8_t *ptr = buffer_write_ptr(&client_data->client_to_sv, &available);
+    if (!buffer_can_write(&client_data->client_to_sv)) {
         // buffer is full, drop or wait
         return SOCKS_ERROR;
     }
@@ -25,7 +25,7 @@ unsigned int echo_read(selector_key *key)
     }
 
     printf("didn't return\n");
-    buffer_write_adv(&client_data->client.echo.bf, n);
+    buffer_write_adv(&client_data->client_to_sv, n);
     if(n<BUFFER_SIZE){
         selector_set_interest(key->s, key->fd, OP_WRITE);
     }
@@ -38,9 +38,9 @@ unsigned int echo_write(selector_key *key)
     puts("im writing");
     client_data *client_data = ATTACHMENT(key);
     size_t available;
-    uint8_t *ptr = buffer_read_ptr(&client_data->client.echo.bf, &available);
+    uint8_t *ptr = buffer_read_ptr(&client_data->client_to_sv, &available);
 
-    if (!buffer_can_read(&client_data->client.echo.bf)) {
+    if (!buffer_can_read(&client_data->client_to_sv)) {
         // Nothing to write
         selector_set_interest(key->s, key->fd, OP_READ);
         return SOCKS_ERROR;
@@ -51,7 +51,7 @@ unsigned int echo_write(selector_key *key)
         return SOCKS_DONE;
     }
 
-    buffer_read_adv(&client_data->client.echo.bf, n);
+    buffer_read_adv(&client_data->client_to_sv, n);
     selector_set_interest(key->s, key->fd, OP_READ);
     return ECHO_READ;
 }

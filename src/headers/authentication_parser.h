@@ -89,7 +89,7 @@ void auth_parse_length(auth_parser * ap, uint8_t length);
 /**
  * Parses and validates username/password
  * @param ap auth parser
- * @param buff buffer that contains uname or password
+ * @param buffer buffer that contains uname or password
  */
 void auth_parse_characters(auth_parser * ap, buffer * buffer);
 
@@ -116,7 +116,7 @@ int is_auth_done(auth_parser * ap);
 int auth_generate_response(auth_parser * ap, buffer * buffer);
 
 /**
- * Parses user request
+ * Parses user request for authentication
  * @param ap auth parser
  * @param buffer buffer from which to read user request
  */
