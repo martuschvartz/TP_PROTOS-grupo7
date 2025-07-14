@@ -7,6 +7,8 @@
 #include <negotiation.h>
 #include <authentication.h>
 
+#include "request.h"
+
 #define N(x) (sizeof(x)/sizeof((x)[0]))
 
 void done_arrival(const unsigned state, selector_key * key) {
@@ -44,6 +46,23 @@ static const struct state_definition client_actions[] = {
         .on_write_ready     = authentication_write,
     },
     {
+        .state              = REQ_READ,
+        .on_arrival         = request_read_init,
+        .on_read_ready      = request_read,
+    },
+    {
+        .state              = REQ_RESOLVE,
+        .on_block_ready     = request_resolve,
+    },
+    {
+        .state              = REQ_CONNECT,
+        .on_write_ready     = request_connect,
+    },
+    {
+        .state              = REQ_WRITE,
+        .on_write_ready     = request_write,
+    },
+    {
         .state              = ECHO_READ,
         .on_read_ready      = echo_read,
     },
@@ -66,6 +85,19 @@ static const struct state_definition client_actions[] = {
 static void socksv5_done(struct selector_key* key);
 
 static void socksv5_destroy(client_data* data) {
+    if (data == NULL) {
+        return;
+    }
+    if (data->origin_addr != NULL) {
+        if (data->handshake.request_parser.atyp != DN) {
+            free(data->origin_addr->ai_addr);
+            free(data->origin_addr);
+        }else {
+            freeaddrinfo(data->origin_addr);
+        }
+        data->origin_addr = NULL;
+        data->current_origin_addr = NULL;
+    }
     free(data);
 }
 
@@ -97,9 +129,22 @@ static void socksv5_block(selector_key *key) {
 }
 
 static void socksv5_close(selector_key *key) {
-    struct state_machine *stm   = &ATTACHMENT(key)->stm;
+    client_data * client_data =ATTACHMENT(key);
+    struct state_machine *stm   = &client_data->stm;
     stm_handler_close(stm, key);
-    socksv5_destroy(ATTACHMENT(key));
+
+    close(key->fd);
+    if (key->fd == client_data->client_fd) {
+        client_data->client_fd = -1;
+    }
+    else if (key->fd == client_data->origin_fd) {
+        client_data->origin_fd = -1;
+    }
+
+    if (client_data->origin_fd == -1 && client_data->client_fd == -1) {
+        socksv5_destroy(ATTACHMENT(key));
+    }
+
     less_connections(); //TODO puede ser q vaya en la funcion de socksv5_done
 }
 
@@ -107,13 +152,13 @@ static void socksv5_close(selector_key *key) {
 static void socksv5_done(selector_key* key) {
     const int fds[] = {
         ATTACHMENT(key)->client_fd,
+        ATTACHMENT(key)->origin_fd,
     };
     for(unsigned i = 0; i < N(fds); i++) {
         if(fds[i] != -1) {
             if(SELECTOR_SUCCESS != selector_unregister_fd(key->s, fds[i])) {
                 abort();
             }
-            close(fds[i]);
         }
     }
 }
@@ -127,7 +172,9 @@ static client_data * socks5_new(int client_fd){
         new_client->stm.max_state = SOCKS_ERROR;
         new_client->stm.states = client_actions;
         new_client->client_fd = client_fd;
-        buffer_init(&new_client->client.echo.bf, BUFFER_SIZE, new_client->client.echo.bf_raw);
+        new_client->origin_fd = -1;
+        buffer_init(&new_client->client_to_sv, BUFFER_SIZE, new_client->client_to_sv_raw);
+        buffer_init(&new_client->sv_to_client, BUFFER_SIZE, new_client->sv_to_client_raw);
         stm_init(&new_client->stm);
     }
 
@@ -141,6 +188,10 @@ static const fd_handler socks5_handler = {
     .handle_block  = socksv5_block,
 };
 
+// check
+fd_handler * get_socks5_handlers() {
+    return &socks5_handler;
+}
 
 void socks_v5_passive_accept(selector_key * selector_key){
     struct sockaddr_storage client_addr;
