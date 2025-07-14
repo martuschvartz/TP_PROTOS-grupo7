@@ -1,20 +1,5 @@
 #include <manager.h>
 
-/*---------------------------------------------------
-
-FALTA:
-    * comandos STAT, LIST-USER,
-
-TODO @josefina
-    * autenticación
-    * conectar bien los datos reales
-    * modularizar y ordenar todo mejor
-
-    * que cuando se liste los usuarios, se muestre el status (y si puede ser más lindo, mejor)
-
----------------------------------------------------*/
-
-#define PORT 1081 // debería ser variable!!
 #define BUFFER_SIZE 1024
 #define MAX_USERS 10
 
@@ -86,19 +71,19 @@ void handle_auth_command(int client_fd, char *cmd, char *arg1, manager_data *dat
             }
             else
             {
-                send_response(client_fd, "usuario no reconocido\r\n", true);
+                send_response(client_fd, "Nombre de usuario no encontrado\r\n", true);
             }
         }
         else
         {
-            send_response(client_fd, "falta nombre de usuario\r\n", true);
+            send_response(client_fd, "Falta parámetro: USER <nombre_usuario>\r\n", true);
         }
     }
     else if (strcmp(cmd, "PASS") == 0)
     {
         if (!data->user_sent)
         {
-            send_response(client_fd, "primero manda USER\r\n", true);
+            send_response(client_fd, "Error de protocolo: se esperaba el comando USER antes de PASS\r\n", true);
         }
         else if (arg1)
         {
@@ -112,22 +97,22 @@ void handle_auth_command(int client_fd, char *cmd, char *arg1, manager_data *dat
                     {
                         data->logged_in = true;
                         data->is_admin = true;
-                        send_response(client_fd, "autenticado como admin\r\n", false);
+                        send_response(client_fd, "Autenticación exitosa. Privilegios de administrador concedidos.\r\n", false);
                     }
                     else
                     {
-                        send_response(client_fd, "necesitas ser administrador\r\n", true);
+                        send_response(client_fd, "Acceso denegado. El usuario no posee privilegios administrativos\r\n", true);
                     }
                 }
             }
             else
-                send_response(client_fd, "contraseña incorrecta\r\n", true);
+                send_response(client_fd, "Error de autenticación: contraseña inválida\r\n", true);
         }
     }
 
     else
     {
-        send_response(client_fd, "debes autenticarte primero (USER + PASS)\r\n", true);
+        send_response(client_fd, "Autenticación requerida: Utilizar USER y PASS\r\n", true);
     }
 }
 
@@ -184,7 +169,7 @@ void handle_command(int client_fd, char *input, manager_data *manager_data)
     }
     else
     {
-        send_response(client_fd, "Comando no reconocido. Escriba HELP\r\n", true);
+        send_response(client_fd, "Comando desconocido. Utilice HELP para ver las opciones disponibles.\r\n", true);
     }
 }
 
@@ -270,32 +255,34 @@ void handle_list(int fd)
 void handle_add_user(int fd, char *user, char *pass)
 {
     if (!user || !pass)
-        return send_response(fd, "Faltan parámetros: ADD-USER <nuevo_usuario> <constraseña>\r\n", true);
+        send_response(fd, "Faltan parámetros: ADD-USER <usuario> <constraseña>\r\n", true);
+    return;
     if (new_user(user, pass) == 0)
     {
         char msg[MAX_LENGTH_MSG];
-        snprintf(msg, sizeof(msg), "Usuario %s agregado\r\n", user);
+        snprintf(msg, sizeof(msg), "Usuario %s creado exitosamente\r\n", user);
         send_response(fd, msg, false);
     }
     else
     {
-        send_response(fd, "No se pudo agregar el usuario\r\n", true);
+        send_response(fd, "Error al crear el usuario. Verifique que no exista previamente.\r\n", true);
     }
 }
 
 void handle_delete_user(int fd, char *user)
 {
     if (!user)
-        return send_response(fd, "Falta parámetro para DELETE-USER\r\n", true);
+        send_response(fd, "Falta parámetro para DELETE-USER\r\n", true);
+    return;
     if (delete_user(user) == 0)
     {
         char msg[MAX_LENGTH_MSG];
-        snprintf(msg, sizeof(msg), "Usuario %s eliminado\r\n", user);
+        snprintf(msg, sizeof(msg), "Usuario %s eliminado correctamente\r\n", user);
         send_response(fd, msg, false);
     }
     else
     {
-        send_response(fd, "No se pudo eliminar el usuario\r\n", true);
+        send_response(fd, "Error al eliminar el usuario. Verifique que el usuario exista.\r\n", true);
     }
 }
 
@@ -309,7 +296,7 @@ void handle_change_pass(int fd, manager_data *data, char *old_pass, char *new_pa
 
     if (change_password(data->username, old_pass, new_pass) == 0)
     {
-        send_response(fd, "Contraseña actualizada\r\n", false);
+        send_response(fd, "La contraseña fue modificada con éxito.\r\n", false);
     }
     else
     {
@@ -320,16 +307,19 @@ void handle_change_pass(int fd, manager_data *data, char *old_pass, char *new_pa
 void handle_change_status(int fd, char *user, char *status)
 {
     if (!user || !status)
-        return send_response(fd, "Faltan parámetros: CHANGE-STATUS <usuario> <admin|commoner>", true);
+    {
+
+        send_response(fd, "Faltan parámetros: CHANGE-STATUS <usuario> <rol>", true);
+        return;
+    }
     change_status(user, strcmp(status, "admin") == 0 ? ADMIN : COMMONER);
     char msg[MAX_LENGTH_MSG];
-    snprintf(msg, sizeof(msg), "Estado de %s cambiado a %s\r\n", user, strcmp(status, "admin") == 0 ? "admin" : "commoner");
+    snprintf(msg, sizeof(msg), "El rol del usuario %s fue actualizado a %s.\r\n", user, strcmp(status, "admin") == 0 ? "admin" : "commoner");
     send_response(fd, msg, false);
 }
 
 void handle_stat(int fd)
 {
-    int count_users = get_user_count();
     int current_connections = get_connections();
     int historical_connections = get_historical_connections();
     unsigned int bytes = get_bytes();
@@ -341,7 +331,7 @@ void handle_stat(int fd)
 
 void handle_quit(manager_data *data)
 {
-    send_response(data->fd, "Se cerrará la conexión\r\n", false);
+    send_response(data->fd, "Sesión finalizada. Cerrando la conexión.\r\n", false);
     selector_unregister_fd(data->selector, data->fd);
 }
 
@@ -392,14 +382,15 @@ void handle_list_user(int fd, char *user)
 void handle_help(int fd)
 {
     send_response(fd,
-                  "Comandos válidos:\r\n"
-                  " - LIST\r\n"
-                  " - ADD-USER <usuario> <clave>\r\n"
-                  " - DELETE-USER <usuario>\r\n"
-                  " - CHANGE-PASS <vieja> <nueva>\r\n"
-                  " - STAT\r\n"
-                  " - CHANGE-STATUS <usuario> <admin|commoner>\r\n"
-                  " - HELP\r\n"
-                  " - QUIT\r\n",
+                  "Comandos disponibles:\r\n"
+                  " - LIST                              Listar todos los usuarios registrados\r\n"
+                  " - ADD-USER <usuario> <contraseña>   Crear un nuevo usuario\r\n"
+                  " - DELETE-USER <usuario>             Eliminar un usuario existente\r\n"
+                  " - CHANGE-PASS <vieja> <nueva>       Modificar su propia contraseña\r\n"
+                  " - CHANGE-STATUS <usuario> <rol>     Cambiar el rol (\"admin\" o \"commoner\") de un usuario\r\n"
+                  " - LIST-USER <usuario>               Mostrar accesos registrados del usuario\r\n"
+                  " - STAT                              Ver métricas de uso del sistema\r\n"
+                  " - HELP                              Mostrar esta ayuda\r\n"
+                  " - QUIT                              Finalizar la sesión actual\r\n",
                   false);
 }
