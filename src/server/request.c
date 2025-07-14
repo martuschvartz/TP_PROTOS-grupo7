@@ -5,6 +5,7 @@
 #include <socks5.h>
 #include <stdio.h>
 #include <string.h>
+#include "logger.h"
 
 static void* request_resolve_domain_name(void* arg);
 static unsigned initiate_origin_connection(selector_key * key);
@@ -32,13 +33,13 @@ static unsigned handle_request(selector_key * key) {
     if (atyp == IPV4) {
         struct sockaddr_in * sockaddr = malloc(sizeof(struct sockaddr_in));
         if (sockaddr == NULL) {
-            fprintf(stderr, "failed to allocate IPv4 address struct\n");
+            our_log(ERROR, "Failed to allocate IPv4 address struct");
             return req_generate_response_error(key, CON_SERVER_FAILURE);
         }
         data->origin_addr = calloc(1, sizeof(struct addrinfo));
         if (data->origin_addr == NULL) {
             free(sockaddr);
-            fprintf(stderr, "failed to allocate server address struct\n");
+            our_log(ERROR, "Failed to allocate server address struct");
             return req_generate_response_error(key, CON_SERVER_FAILURE);
         }
         sockaddr->sin_family = AF_INET;
@@ -55,13 +56,13 @@ static unsigned handle_request(selector_key * key) {
     if (atyp == IPV6) {
         struct sockaddr_in6 * sockaddr = malloc(sizeof(struct sockaddr_in6));
         if (sockaddr == NULL) {
-            fprintf(stderr, "failed to allocate IPv6 address struct\n");
+            our_log(ERROR, "Failed to allocate IPv6 address struct");
             return req_generate_response_error(key, CON_SERVER_FAILURE);
         }
         data->origin_addr = calloc(1, sizeof(struct addrinfo));
         if (data->origin_addr == NULL) {
             free(sockaddr);
-            fprintf(stderr, "failed to allocate server address struct\n");
+            our_log(ERROR, "Failed to allocate server address struct");
             return req_generate_response_error(key, CON_SERVER_FAILURE);
         }
         sockaddr->sin6_family = AF_INET6;
@@ -79,7 +80,7 @@ static unsigned handle_request(selector_key * key) {
     pthread_t thread_id;
     resolve_job * job = malloc(sizeof(resolve_job));
     if (job == NULL) {
-        fprintf(stderr, "failed to allocate job struct\n");
+        our_log(ERROR, "Failed to allocate job struct");
         return req_generate_response_error(key, CON_SERVER_FAILURE);
     }
     job->selector = key->s;
@@ -88,7 +89,7 @@ static unsigned handle_request(selector_key * key) {
 
     if (pthread_create(&thread_id, NULL, request_resolve_domain_name, job) == -1) {
         free(job);
-        fprintf(stderr, "failed to create thread\n");
+        our_log(ERROR, "Failed to create thread");
         return req_generate_response_error(key, CON_SERVER_FAILURE);
     }
     if (selector_set_interest_key(key, OP_NOOP) != SELECTOR_SUCCESS) {
@@ -98,7 +99,7 @@ static unsigned handle_request(selector_key * key) {
 }
 
 unsigned request_read(selector_key * key) {
-    fprintf(stdout, "Request Read Started\n");
+    our_log(INFO, "Request read started");
     client_data * data = ATTACHMENT(key);
     size_t bytes_available;
     uint8_t * ptr = buffer_write_ptr(&data->client_to_sv, &bytes_available);
@@ -110,7 +111,7 @@ unsigned request_read(selector_key * key) {
     const ssize_t bytes_read = recv(key->fd, ptr, bytes_available, 0);
 
     if (bytes_read == 0) {
-        fprintf(stderr, "Client closed connection\n");
+        our_log(INFO, "Client closed connection");
         return SOCKS_ERROR;
     }
 
@@ -137,7 +138,7 @@ unsigned request_read(selector_key * key) {
 }
 
 unsigned request_write(selector_key * key) {
-    fprintf(stdout, "Request Write Started\n");
+    our_log(INFO, "Request write started");
     client_data * data = ATTACHMENT(key);
     size_t bytes_to_write;
     uint8_t *ptr = buffer_read_ptr(&data->sv_to_client, &bytes_to_write);
@@ -184,21 +185,25 @@ static void* request_resolve_domain_name(void* arg) {
     int status = getaddrinfo(domain_name, port, &hints, &data->origin_addr);
 
     if (status != 0) {
-        fprintf(stderr, "getaddrinfo error: %s\n", gai_strerror(status));
+        StringBuilder *sb = sb_create();
+        sb_append(sb, "'getaddrinfo' error: ");
+        sb_append(sb, int_to_string(gai_strerror(status)));
+        our_log(ERROR, sb_get_string(sb));
+        sb_free(sb);
         data->origin_addr = NULL;
     }
 
     data->current_origin_addr = data->origin_addr;
 
     if (selector_notify_block(rs->selector, rs->client_fd)) {
-        fprintf(stderr, "failed to notify selector of blocking job completion\n");
+        our_log(ERROR, "Failed to notify selecto of blocking job completion");
     }
     free(rs);
     return NULL;
 }
 
 unsigned request_resolve(selector_key * key) {
-    fprintf(stdout, "Request Resolve (on_block_ready) Started\n");
+    our_log(INFO, "Request resolve (on_block_ready) started");
     client_data * data = ATTACHMENT(key);
 
     if (data->origin_addr == NULL) {
@@ -272,7 +277,7 @@ static unsigned initiate_origin_connection(selector_key * key) {
 }
 
 unsigned request_connect(selector_key * key) {
-    fprintf(stdout, "Request Connect (on_write_ready) Started\n");
+    our_log(INFO,"Request conncect (on_write_ready) started");
     client_data * data = ATTACHMENT(key);
     req_parser * rp = &data->handshake.request_parser;
 
