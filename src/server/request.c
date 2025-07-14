@@ -164,7 +164,7 @@ unsigned request_write(selector_key * key) {
         return SOCKS_ERROR;
     }
 
-    return ECHO_READ;
+    return SOCKS_DONE;
 }
 
 static void* request_resolve_domain_name(void* arg) {
@@ -301,6 +301,9 @@ unsigned request_connect(selector_key * key) {
         }
 
         // set interest al origin fd?
+        if (selector_set_interest(key->s, data->origin_fd, OP_READ) != SELECTOR_SUCCESS) {
+            return SOCKS_ERROR;
+        }
         return REQ_WRITE;
     }
 

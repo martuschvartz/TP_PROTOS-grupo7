@@ -80,6 +80,10 @@ static const struct state_definition client_actions[] = {
 static void socksv5_done(struct selector_key* key);
 
 static void socksv5_destroy(client_data* data) {
+    if (data == NULL) {
+        return;
+    }
+    // todo clean other things?
     free(data);
 }
 
@@ -111,9 +115,22 @@ static void socksv5_block(selector_key *key) {
 }
 
 static void socksv5_close(selector_key *key) {
-    struct state_machine *stm   = &ATTACHMENT(key)->stm;
+    client_data * client_data =ATTACHMENT(key);
+    struct state_machine *stm   = &client_data->stm;
     stm_handler_close(stm, key);
-    socksv5_destroy(ATTACHMENT(key));
+
+    close(key->fd);
+    if (key->fd == client_data->client_fd) {
+        client_data->client_fd = -1;
+    }
+    else if (key->fd == client_data->origin_fd) {
+        client_data->origin_fd = -1;
+    }
+
+    if (client_data->origin_fd == -1 && client_data->client_fd == -1) {
+        socksv5_destroy(ATTACHMENT(key));
+    }
+
     less_connections(); //TODO puede ser q vaya en la funcion de socksv5_done
 }
 
@@ -121,13 +138,13 @@ static void socksv5_close(selector_key *key) {
 static void socksv5_done(selector_key* key) {
     const int fds[] = {
         ATTACHMENT(key)->client_fd,
+        ATTACHMENT(key)->origin_fd,
     };
     for(unsigned i = 0; i < N(fds); i++) {
         if(fds[i] != -1) {
             if(SELECTOR_SUCCESS != selector_unregister_fd(key->s, fds[i])) {
                 abort();
             }
-            close(fds[i]);
         }
     }
 }
