@@ -6,6 +6,7 @@
 #include <socks5.h>
 #include <stdio.h>
 #include <sys/socket.h>
+#include "logger.h"
 
 void authentication_read_init(const unsigned state, selector_key * key);
 

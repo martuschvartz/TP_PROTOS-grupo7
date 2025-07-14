@@ -5,6 +5,7 @@
 #include <errno.h>
 #include <getopt.h>
 #include <args.h>
+#include "logger.h"
 
 static unsigned short
 port(const char *s)
@@ -14,7 +15,11 @@ port(const char *s)
 
     if (end == s || '\0' != *end || ((LONG_MIN == sl || LONG_MAX == sl) && ERANGE == errno) || sl < 0 || sl > USHRT_MAX)
     {
-        fprintf(stderr, "port should in in the range of 1-65536: %s\n", s);
+        StringBuilder *sb = sb_create();
+        sb_append(sb, "Port should be in the range of 1-65536: ");
+        sb_append(sb, s);
+        our_log(ERROR, sb_get_string(sb));
+        sb_free(sb);
         exit(1);
         return 1;
     }
@@ -27,7 +32,11 @@ user(char *s, struct users *user)
     char *p = strchr(s, ':');
     if (p == NULL)
     {
-        fprintf(stderr, "password not found\n");
+        StringBuilder *sb = sb_create();
+        sb_append(sb, "Password not found");
+        sb_append(sb, s);
+        our_log(WARNING, sb_get_string(sb));
+        sb_free(sb);
         exit(1);
     }
     else
@@ -114,7 +123,11 @@ void parse_args(const int argc, char **argv, struct socks5args *args)
         case 'u':
             if (nusers >= MAX_USERS)
             {
-                fprintf(stderr, "maximun number of command line users reached: %d.\n", MAX_USERS);
+                StringBuilder *sb = sb_create();
+                sb_append(sb, "Maximun number of command line users reached: ");
+                sb_append(sb, int_to_string(MAX_USERS));
+                our_log(WARNING, sb_get_string(sb));
+                sb_free(sb);
                 exit(1);
             }
             else
@@ -127,18 +140,26 @@ void parse_args(const int argc, char **argv, struct socks5args *args)
             version();
             exit(0);
         default:
-            fprintf(stderr, "unknown argument %d.\n", c);
+            {
+            StringBuilder *sb2 = sb_create();
+            sb_append(sb2, "Unknown argument: ");
+            sb_append(sb2, int_to_string(c));
+            our_log(ERROR, sb_get_string(sb2));
+            sb_free(sb2);
             exit(1);
+            }
         }
     }
     if (optind < argc)
     {
-        fprintf(stderr, "argument not accepted: ");
+        StringBuilder *sb = sb_create();
+        sb_append(sb, "Argument not accepted:");
         while (optind < argc)
         {
-            fprintf(stderr, "%s ", argv[optind++]);
+            sb_append(sb, argv[optind++]);
         }
-        fprintf(stderr, "\n");
-        exit(1);
+        our_log(WARNING, sb_get_string(sb));
+        sb_free(sb);
+                exit(1);
     }
 }

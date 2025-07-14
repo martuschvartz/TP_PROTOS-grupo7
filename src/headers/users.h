@@ -5,14 +5,17 @@
 #define ADMIN 1
 #define COMMONER 0
 
+#include "logger.h"
+
 typedef struct
 {
     char name[MAX_LENGTH + 1];
     char pass[MAX_LENGTH + 1];
     int status;
+    StringBuilder *access;
 } Tuser;
 
-static Tuser *users; // lista de usuarios
+extern Tuser *users; // lista de usuarios
 
 int new_user(const char *name, const char *pass);
 
@@ -33,5 +36,7 @@ int user_exists(const char *name);
 const Tuser *get_users();
 
 unsigned int get_user_count();
+
+StringBuilder* get_access(const char* name);
 
 #endif

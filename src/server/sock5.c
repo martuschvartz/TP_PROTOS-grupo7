@@ -10,11 +10,17 @@
 #define N(x) (sizeof(x)/sizeof((x)[0]))
 
 void done_arrival(const unsigned state, selector_key * key) {
-    printf("Done state\n");
+    StringBuilder *sb = sb_create();
+    sb_append(sb, "Done state");
+    our_log(INFO, sb_get_string(sb));
+    sb_free(sb);
 }
 
 void error_arrival(const unsigned state, selector_key * key) {
-    printf("Error state\n");
+      StringBuilder *sb = sb_create();
+    sb_append(sb, "Error state");
+    our_log(ERROR, sb_get_string(sb));
+    sb_free(sb);
 }
 
 /** definición de handlers para cada estado */

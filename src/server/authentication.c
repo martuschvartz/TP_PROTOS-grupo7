@@ -6,7 +6,11 @@ void authentication_read_init(const unsigned state, selector_key * key) {
 }
 
 unsigned authentication_read(selector_key * key) {
-    fprintf(stdout, "Authentication Read Started\n");
+
+    StringBuilder *sb = sb_create();
+    sb_append(sb, "Authentication read started ");
+    our_log(INFO, sb_get_string(sb));
+    sb_free(sb);
     client_data * data = ATTACHMENT(key);
     size_t bytes_available;
     uint8_t * ptr = buffer_write_ptr(&data->client.authentication.bf, &bytes_available);
@@ -34,7 +38,11 @@ unsigned authentication_read(selector_key * key) {
 }
 
 unsigned authentication_write(selector_key * key) {
-    fprintf(stdout, "Authentication Write Started\n");
+    
+    StringBuilder *sb = sb_create();
+    sb_append(sb, "Authentication write started ");
+    our_log(INFO, sb_get_string(sb));
+    sb_free(sb);
     client_data * data = ATTACHMENT(key);
     size_t bytes_to_write;
     uint8_t *ptr = buffer_read_ptr(&data->client.authentication.bf, &bytes_to_write);

@@ -16,6 +16,7 @@
 #include <sys/select.h>
 #include <signal.h>
 #include <selector.h>
+#include "logger.h"
 
 #define N(x) (sizeof(x)/sizeof((x)[0]))
 
@@ -556,7 +557,11 @@ selector_select(fd_selector s) {
                 for(int i = 0 ; i < s->max_fd; i++) {
                     if(FD_ISSET(i, &s->master_r)|| FD_ISSET(i, &s->master_w)) {
                         if(-1 == fcntl(i, F_GETFD, 0)) {
-                            fprintf(stderr, "Bad descriptor detected: %d\n", i);
+                            StringBuilder *sb = sb_create();
+                            sb_append(sb, "Bad descripto detected: ");
+                            sb_append(sb, int_to_string(i));
+                            our_log(WARNING, sb_get_string(sb));
+                            sb_free(sb);
                         }
                     }
                 }
