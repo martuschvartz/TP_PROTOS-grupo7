@@ -7,7 +7,11 @@ void negotiation_read_init(const unsigned state, selector_key *key) {
 }
 
 unsigned int negotiation_read(selector_key *key) {
-    fprintf(stdout, "Negotiation Read Started\n");
+
+    StringBuilder *sb = sb_create();
+    sb_append(sb, "Negotiation read started");
+    our_log(INFO, sb_get_string(sb));
+    sb_free(sb);
     client_data *client_data = ATTACHMENT(key);
     size_t bytes_available;
     uint8_t *ptr = buffer_write_ptr(&client_data->client.negotiation.bf, &bytes_available);
@@ -34,7 +38,11 @@ unsigned int negotiation_read(selector_key *key) {
 }
 
 unsigned int negotiation_write(selector_key *key) {
-    fprintf(stdout, "Negotiation Write Started\n");
+
+    StringBuilder *sb = sb_create();
+    sb_append(sb, "Negotiation write started");
+    our_log(INFO, sb_get_string(sb));
+    sb_free(sb);
     client_data *client_data = ATTACHMENT(key);
     size_t bytes_to_write;
     uint8_t *ptr = buffer_read_ptr(&client_data->client.negotiation.bf, &bytes_to_write);
