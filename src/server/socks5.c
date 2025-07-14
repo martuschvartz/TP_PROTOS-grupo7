@@ -7,6 +7,8 @@
 #include <negotiation.h>
 #include <authentication.h>
 
+#include "request.h"
+
 #define N(x) (sizeof(x)/sizeof((x)[0]))
 
 void done_arrival(const unsigned state, selector_key * key) {
@@ -36,6 +38,24 @@ static const struct state_definition client_actions[] = {
     {
         .state              = AUTH_WRITE,
         .on_write_ready     = authentication_write,
+    },
+    {
+        .state              = REQ_READ,
+        .on_arrival         = request_read_init,
+        .on_read_ready      = request_read,
+    },
+    {
+        .state              = REQ_RESOLVE,
+        .on_block_ready     = request_resolve,
+    },
+    {
+        .state              = REQ_CONNECT,
+        .on_arrival         = request_connect_init,
+        .on_write_ready     = request_connect,
+    },
+    {
+        .state              = REQ_WRITE,
+        .on_write_ready     = request_write,
     },
     {
         .state              = ECHO_READ,
@@ -121,6 +141,7 @@ static client_data * socks5_new(int client_fd){
         new_client->stm.max_state = SOCKS_ERROR;
         new_client->stm.states = client_actions;
         new_client->client_fd = client_fd;
+        new_client->origin_fd = -1;
         buffer_init(&new_client->client_to_sv, BUFFER_SIZE, new_client->client_to_sv_raw);
         buffer_init(&new_client->sv_to_client, BUFFER_SIZE, new_client->sv_to_client_raw);
         stm_init(&new_client->stm);
@@ -136,6 +157,10 @@ static const fd_handler socks5_handler = {
     .handle_block  = socksv5_block,
 };
 
+// check
+fd_handler * get_socks5_handlers() {
+    return &socks5_handler;
+}
 
 void socks_v5_passive_accept(selector_key * selector_key){
     struct sockaddr_storage client_addr;

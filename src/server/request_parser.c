@@ -1,4 +1,5 @@
 #include <request_parser.h>
+#include <string.h>
 
 #define PROTOCOL_VERSION 0x05
 #define CONNECT 0x01
@@ -17,7 +18,6 @@ void initialize_request_parser(req_parser *rp) {
 void req_parse_version(req_parser *rp, uint8_t version) {
     if (version == PROTOCOL_VERSION) {
         rp->current_state = REQ_CMD;
-        rp->connection_status = CON_SERVER_FAILURE;
         return;
     }
     rp->current_state = REQ_ERROR;
@@ -73,6 +73,21 @@ void req_parse_dst_addr_length(req_parser *rp, uint8_t dn_length) {
 void req_parse_dst_addr(req_parser *rp, uint8_t byte) {
     rp->address.buffer[rp->bytes_read++] = byte;
     if (rp->bytes_read == rp->addr_len) {
+        switch (rp->atyp) {
+            case IPV4:
+                memcpy(&rp->address.address_class.ipv4, rp->address.buffer, rp->addr_len);
+                break;
+            case IPV6:
+                memcpy(&rp->address.address_class.ipv6, rp->address.buffer, rp->addr_len);
+                break;
+            case DN:
+                memcpy(rp->address.address_class.dn, rp->address.buffer, rp->addr_len);
+                rp->address.address_class.dn[rp->addr_len] = '\0';
+                break;
+            default:
+                //log error?
+                return;
+        }
         rp->current_state = REQ_DST_PORT;
         rp->bytes_read = 0;
         return;

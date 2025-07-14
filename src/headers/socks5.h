@@ -155,10 +155,12 @@ typedef struct client_data{
     uint8_t sv_to_client_raw[BUFFER_SIZE];
 
     struct addrinfo * origin_addr;
-
+    struct addrinfo * current_origin_addr;
 
 }client_data;
 
 void socks_v5_passive_accept(selector_key * selector_key);
+
+fd_handler * get_socks5_handlers();
 
 #endif
