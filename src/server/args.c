@@ -140,12 +140,14 @@ void parse_args(const int argc, char **argv, struct socks5args *args)
             version();
             exit(0);
         default:
-            StringBuilder *sb = sb_create();
-            sb_append(sb, "Unknown argument: ");
-            sb_append(sb, int_to_string(c));
-            our_log(ERROR, sb_get_string(sb));
-            sb_free(sb);
+            {
+            StringBuilder *sb2 = sb_create();
+            sb_append(sb2, "Unknown argument: ");
+            sb_append(sb2, int_to_string(c));
+            our_log(ERROR, sb_get_string(sb2));
+            sb_free(sb2);
             exit(1);
+            }
         }
     }
     if (optind < argc)
