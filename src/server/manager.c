@@ -48,7 +48,7 @@ void handle_delete_user(int fd, char *user);
 void handle_change_pass(int fd, manager_data *data, char *old_pass, char *new_pass);
 void handle_change_status(int fd, char *user, char *status);
 void handle_stat(int fd);
-void handle_list_user(int fd);
+void handle_list_user(int fd, char *user);
 void handle_quit(manager_data *data);
 void handle_help(int fd);
 
@@ -164,7 +164,7 @@ void handle_command(int client_fd, char *input, manager_data *manager_data)
     }
     else if (strcmp(cmd, "LIST-USER") == 0)
     {
-        send_response(client_fd, "TO-DO\r\n", true); ///////////////////////////////////////////////////////////////////////////////////////////
+        handle_list_user(client_fd, arg1);
     }
     else if (strcmp(cmd, "STAT") == 0)
     {
@@ -343,6 +343,50 @@ void handle_quit(manager_data *data)
 {
     send_response(data->fd, "Se cerrará la conexión\r\n", false);
     selector_unregister_fd(data->selector, data->fd);
+}
+
+void handle_list_user(int fd, char *user)
+{
+    if (!user)
+    {
+        send_response(fd, "Falta parámetro: LIST-USER <usuario>\r\n", true);
+        return;
+    }
+
+    int index = user_exists(user);
+    if (index < 0)
+    {
+        char err_msg[MAX_LENGTH_MSG];
+        snprintf(err_msg, sizeof(err_msg), "El usuario '%s' no existe\r\n", user);
+        send_response(fd, err_msg, true);
+        return;
+    }
+
+    const Tuser *u = &get_users()[index];
+    char msg[2048]; // buffer para el mensaje
+    memset(msg, 0, sizeof(msg));
+
+    if (u->access != NULL)
+    {
+        const char *access_list = sb_get_string(u->access);
+        if (access_list != NULL && strlen(access_list) > 0)
+        {
+            strcat(msg, access_list);
+            strcat(msg, "\r\n");
+        }
+        else
+        {
+            strcat(msg, "(sin accesos registrados)\r\n");
+        }
+    }
+    else
+    {
+        strcat(msg, "(sin accesos registrados)\r\n");
+    }
+
+    strcat(msg, "----------------------------------\r\n");
+
+    send_response(fd, msg, false);
 }
 
 void handle_help(int fd)
