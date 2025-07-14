@@ -57,11 +57,8 @@ static const struct state_definition client_actions[] = {
         .on_write_ready     = request_write,
     },
     {
-        .state              = COPY_READ,
+        .state              = COPY,
         .on_read_ready      = copy_read,
-    },
-    {
-        .state              = COPY_WRITE,
         .on_write_ready     = copy_write,
     },
     {
@@ -137,9 +134,8 @@ static void socksv5_close(selector_key *key) {
 
     if (client_data->origin_fd == -1 && client_data->client_fd == -1) {
         socksv5_destroy(ATTACHMENT(key));
+        less_connections(); //TODO puede ser q vaya en la funcion de socksv5_done
     }
-
-    less_connections(); //TODO puede ser q vaya en la funcion de socksv5_done
 }
 
 //chequear

@@ -165,7 +165,7 @@ unsigned request_write(selector_key * key) {
         return SOCKS_ERROR;
     }
 
-    return COPY_READ;
+    return COPY;
 }
 
 static void* request_resolve_domain_name(void* arg) {
@@ -251,12 +251,14 @@ static unsigned initiate_origin_connection(selector_key * key) {
     if (connection_result == 0) {
         rp->connection_status = CON_SUCCEEDED;
 
-        if (req_generate_response(rp, &data->sv_to_client) || selector_set_interest_key(key, OP_WRITE)) {
+        if (req_generate_response(rp, &data->sv_to_client) || selector_set_interest_key(key, OP_WRITE) != SELECTOR_SUCCESS) {
             return SOCKS_ERROR;
         }
 
-        // set interest al origin? no se si es write o read
-        // no se si va a req connect porque si va a req write se saltea lo de getsockopt
+        if (selector_set_interest(key->s, data->origin_fd, OP_READ) != SELECTOR_SUCCESS) {
+            return SOCKS_ERROR;
+        }
+
         return REQ_CONNECT;
     }
     if (connection_result == -1 && errno == EINPROGRESS) {

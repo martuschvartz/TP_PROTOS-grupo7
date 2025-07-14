@@ -115,8 +115,7 @@ enum socks_v5state {
      */
     REQ_WRITE,
 
-    COPY_READ,
-    COPY_WRITE,
+    COPY,
 
     // estados terminales
     SOCKS_DONE,

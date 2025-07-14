@@ -5,8 +5,8 @@
 
 unsigned int copy_read(selector_key *key);
 
-// non blocking send
 unsigned int copy_write(selector_key *key);
 
+void copy_init(const unsigned state, selector_key *key);
 
 #endif
