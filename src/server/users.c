@@ -15,11 +15,13 @@ int new_user(const char *name, const char *pass)
 {
 
     // Chequear que name y pass no estén vacíos
-    if (name == NULL || name[0] == '\0') {
+    if (name == NULL || name[0] == '\0')
+    {
         our_log(WARNING, "Username must have at least one character.");
         return -1;
     }
-    if (pass == NULL || pass[0] == '\0') {
+    if (pass == NULL || pass[0] == '\0')
+    {
         our_log(WARNING, "Password must have at least one character.");
         return -1;
     }
@@ -55,7 +57,7 @@ int new_user(const char *name, const char *pass)
     sb_append(sb, name);
     our_log(INFO, sb_get_string(sb));
     sb_free(sb);
-    
+
     return 0;
 }
 
@@ -103,7 +105,7 @@ int change_password(const char *name, const char *old, const char *new)
         sb_append(sb, name);
         sb_append(sb, ", does not exist.\n");
         our_log(WARNING, sb_get_string(sb));
-        sb_free(sb);        
+        sb_free(sb);
         return -1;
     }
 
@@ -130,7 +132,7 @@ int delete_user(const char *name)
         sb_append(sb, name);
         sb_append(sb, ", does not exist.\n");
         our_log(WARNING, sb_get_string(sb));
-        sb_free(sb);        
+        sb_free(sb);
         return -1;
     }
 
@@ -138,7 +140,7 @@ int delete_user(const char *name)
     {
         if (admins == 1)
         { // solo queda uno
-             StringBuilder *sb = sb_create();
+            StringBuilder *sb = sb_create();
             sb_append(sb, "We cant allow you to delete ");
             sb_append(sb, name);
             sb_append(sb, ", its the only user with ADMIN powers.\n");
@@ -149,7 +151,7 @@ int delete_user(const char *name)
         admins--;
     }
 
-    //le hago el free correspondiente a su sb
+    // le hago el free correspondiente a su sb
     sb_free(users[index].access);
 
     for (int i = index; i < cantUsers - 1; i++)
@@ -182,9 +184,11 @@ int init_users()
 
 int close_users()
 {
-    //en el caso de que queden users, libero sus access
-    for(int i=0; i<cantUsers; i++){
-        if (users[i].access != NULL) {
+    // en el caso de que queden users, libero sus access
+    for (int i = 0; i < cantUsers; i++)
+    {
+        if (users[i].access != NULL)
+        {
             sb_free(users[i].access);
         }
     }
@@ -203,21 +207,21 @@ int user_login(const char *name, const char *password)
         sb_append(sb, name);
         sb_append(sb, ", does not exist.\n");
         our_log(WARNING, sb_get_string(sb));
-        sb_free(sb);        
+        sb_free(sb);
         return -1;
     }
 
     // Check pass
-    if (strcmp(users[index].pass, password) == 0)
+    if (strcmp(users[index].pass, password) != 0)
     {
         StringBuilder *sb = sb_create();
         sb_append(sb, "Wrong password");
         our_log(WARNING, sb_get_string(sb));
-        sb_free(sb); 
-        return 0;
+        sb_free(sb);
+        return -1;
     }
 
-    return -1;
+    return 0;
 }
 
 int user_exists(const char *name)
@@ -242,7 +246,8 @@ unsigned int get_user_count()
     return cantUsers;
 }
 
-StringBuilder* get_access(const char* name){
+StringBuilder *get_access(const char *name)
+{
     int index = user_exists(name);
 
     if (index < 0)
@@ -252,7 +257,7 @@ StringBuilder* get_access(const char* name){
         sb_append(sb, name);
         sb_append(sb, ", does not exist.\n");
         our_log(WARNING, sb_get_string(sb));
-        sb_free(sb);        
+        sb_free(sb);
         return NULL;
     }
 

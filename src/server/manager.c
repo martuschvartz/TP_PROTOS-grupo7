@@ -209,12 +209,12 @@ void manager_passive_accept(struct selector_key *key)
 static void manager_read(struct selector_key *key)
 {
     manager_data *data = key->data;
+    if (data == NULL)
+        return;
     int n = recv(data->fd, data->buffer, BUFFER_SIZE - 1, 0);
     if (n <= 0)
     {
         selector_unregister_fd(key->s, data->fd);
-        close(data->fd);
-        free(data);
         return;
     }
     data->buffer[n] = 0;
@@ -229,6 +229,7 @@ static void manager_close(struct selector_key *key)
     {
         close(data->fd);
         free(data);
+        key->data = NULL;
     }
 }
 
