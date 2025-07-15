@@ -138,9 +138,11 @@ int is_req_done(req_parser * rp);
  *
  * @param rp request parser
  * @param buffer where the response will be stored
+ * @param bnd_addr the bound address of the server's connection to the origin
+ * @param bnd_addr_len the length of the bound address
  * @return 0 on success, 1 on error
  */
-int req_generate_response(req_parser * rp, buffer * buffer);
+int req_generate_response(req_parser * rp, buffer * buffer, const struct sockaddr_storage *bnd_addr, socklen_t bnd_addr_len);
 
 
 /**
