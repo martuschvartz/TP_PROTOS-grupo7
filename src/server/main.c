@@ -42,8 +42,7 @@ int set_server_sock_address(int port, void *res_address, int *res_address_length
     //si es ipv6 tiene ':'
     int ipv6 = strchr(sock_addrs, ':') != NULL;
     if(ipv6){
-        struct sockaddr_in6 sock_ipv6;
-        memset(&sock_ipv6, 0, sizeof(sock_ipv6));
+        struct sockaddr_in6 sock_ipv6 = {0};
         sock_ipv6.sin6_family= AF_INET6;
         inet_pton(AF_INET6, sock_addrs, &sock_ipv6.sin6_addr);
         sock_ipv6.sin6_port= htons(port);
@@ -53,8 +52,7 @@ int set_server_sock_address(int port, void *res_address, int *res_address_length
         return 0;
     }
 
-    struct sockaddr_in sock_ipv4;
-    memset(&sock_ipv4, 0, sizeof(sock_ipv4));
+    struct sockaddr_in sock_ipv4 = {0};
     sock_ipv4.sin_family = AF_INET;
     inet_pton(AF_INET, sock_addrs, &sock_ipv4.sin_addr.s_addr);
     sock_ipv4.sin_port = htons(port);
