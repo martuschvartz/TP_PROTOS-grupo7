@@ -161,7 +161,7 @@ static void socksv5_done(selector_key* key) {
 }
 
 
-static client_data * socksv5_new(int client_fd, struct sockaddr_storage client_address){
+static client_data * socksv5_new(int client_fd, struct sockaddr_storage client_addr){
     client_data * new_client = calloc(1, sizeof(struct client_data));
     
     if(new_client != NULL){
@@ -170,7 +170,7 @@ static client_data * socksv5_new(int client_fd, struct sockaddr_storage client_a
         new_client->stm.states = client_actions;
         new_client->client_fd = client_fd;
         new_client->client_eof = 0;
-        new_client->client_address = client_address;
+        new_client->client_address = client_addr;
         new_client->origin_eof = 0;
         new_client->origin_fd = -1;
         buffer_init(&new_client->client_to_sv, BUFFER_SIZE, new_client->client_to_sv_raw);

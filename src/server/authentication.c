@@ -1,5 +1,7 @@
 #include <authentication.h>
 
+#include "users.h"
+
 void authentication_read_init(const unsigned state, selector_key * key) {
     client_data * data = ATTACHMENT(key);
     initialize_auth_parser(&data->handshake.authentication_parser);
@@ -29,7 +31,10 @@ unsigned authentication_read(selector_key * key) {
     auth_parse(&data->handshake.authentication_parser, &data->client_to_sv);
 
     if (is_auth_done(&data->handshake.authentication_parser)) {
-        if ( auth_generate_response(&data->handshake.authentication_parser, &data->sv_to_client) || selector_set_interest_key(key, OP_WRITE) != SELECTOR_SUCCESS) {
+        int login = user_login(data->handshake.authentication_parser.uname, data->handshake.authentication_parser.passwd);
+        int authenticated = login < 0 ? ACCESS_DENIED: AUTHENTICATED;
+        strcpy(data->username, data->handshake.authentication_parser.uname);
+        if ( auth_generate_response(&data->handshake.authentication_parser, &data->sv_to_client, authenticated) || selector_set_interest_key(key, OP_WRITE) != SELECTOR_SUCCESS) {
             return SOCKS_ERROR;
         }
         return AUTH_WRITE;

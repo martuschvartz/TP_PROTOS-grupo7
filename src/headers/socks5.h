@@ -135,9 +135,12 @@ typedef struct client_data{
         req_parser request_parser;
     } handshake;
 
+    char uname[MAX_LENGTH + 1];
+
     int client_fd;
     int client_eof;
     struct sockaddr_storage client_address;
+    char username[MAX_LENGTH + 1];
     buffer client_to_sv;
     uint8_t client_to_sv_raw[BUFFER_SIZE];
 

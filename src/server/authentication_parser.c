@@ -43,6 +43,7 @@ void auth_parse_characters(auth_parser * ap, buffer * buffer) {
     while(i < ap->length && buffer_can_read(buffer)) {
         if (ap->current_state == AUTH_UNAME) {
             ap->uname[i++] = buffer_read(buffer);
+            ap->uname[i] = '\0';
         }else {
             ap->passwd[i++] = buffer_read(buffer);
         }
@@ -62,9 +63,7 @@ int is_auth_done(auth_parser * ap) {
 }
 
 
-int auth_generate_response(auth_parser * ap, buffer * buffer) {
-    int login = user_login(ap->uname, ap->passwd);
-    ap->authenticated = login < 0 ? ACCESS_DENIED: AUTHENTICATED;
+int auth_generate_response(auth_parser * ap, buffer * buffer, int authenticated) {
     if (!buffer_can_write(buffer)) {
         return 1;
     }
@@ -72,7 +71,7 @@ int auth_generate_response(auth_parser * ap, buffer * buffer) {
     if (!buffer_can_write(buffer)) {
         return 1;
     }
-    buffer_write(buffer, ap->authenticated);
+    buffer_write(buffer, authenticated);
     return 0;
 }
 

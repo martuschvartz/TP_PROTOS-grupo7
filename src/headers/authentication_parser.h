@@ -111,9 +111,10 @@ int is_auth_done(auth_parser * ap);
  * Generates server response
  * @param ap auth parser
  * @param buffer where the response is stored
+ * @param authenticated if the user could log in successfully
  * @return 0 if successful, 1 on error
  */
-int auth_generate_response(auth_parser * ap, buffer * buffer);
+int auth_generate_response(auth_parser * ap, buffer * buffer, int authenticated);
 
 /**
  * Parses user request for authentication

@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include "request_parser.h"
 
 typedef struct {
     char *buffer;
@@ -28,5 +29,6 @@ void log_free();
 const char *get_logs(); 
 void our_log(LOG_TYPE type, const char* msg);
 void set_log_type(LOG_TYPE new);
-
+void sb_remove_last_line(StringBuilder *sb);
+const char* status_to_string(connection_status status);
 #endif

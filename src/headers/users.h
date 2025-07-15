@@ -4,7 +4,6 @@
 #define MAX_LENGTH 255
 #define ADMIN 1
 #define COMMONER 0
-
 #include "logger.h"
 
 typedef struct
@@ -41,5 +40,7 @@ const Tuser *get_users();
 unsigned int get_user_count();
 
 StringBuilder *get_access(const char *name);
+
+StringBuilder* create_access(char *name);
 
 #endif
