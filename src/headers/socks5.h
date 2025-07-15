@@ -114,19 +114,8 @@ enum socks_v5state {
      *
      */
     REQ_WRITE,
-    //
-    // SOCKS5_READ,
-    //
-    // SOCKS5_WRITE,
-    //
-    // SOCKS5_BLOCK,
-    //
-    // SOCKS5_CLOSE,
 
-    // for testing purposes
-    ECHO_READ,
-
-    ECHO_WRITE,
+    COPY,
 
     // estados terminales
     SOCKS_DONE,
@@ -147,10 +136,12 @@ typedef struct client_data{
     } handshake;
 
     int client_fd;
+    int client_eof;
     buffer client_to_sv;
     uint8_t client_to_sv_raw[BUFFER_SIZE];
 
     int origin_fd;
+    int origin_eof;
     buffer sv_to_client;
     uint8_t sv_to_client_raw[BUFFER_SIZE];
 

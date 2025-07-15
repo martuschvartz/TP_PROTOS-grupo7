@@ -2,7 +2,7 @@
 #include <sys/socket.h>
 #include <selector.h>
 #include <stdlib.h>
-#include <echo.h>
+#include <copy.h>
 #include <stdio.h>
 #include <negotiation.h>
 #include <authentication.h>
@@ -63,12 +63,9 @@ static const struct state_definition client_actions[] = {
         .on_write_ready     = request_write,
     },
     {
-        .state              = ECHO_READ,
-        .on_read_ready      = echo_read,
-    },
-    {
-        .state              = ECHO_WRITE,
-        .on_write_ready     = echo_write,
+        .state              = COPY,
+        .on_read_ready      = copy_read,
+        .on_write_ready     = copy_write,
     },
     {
         .state              = SOCKS_DONE,
@@ -133,6 +130,7 @@ static void socksv5_close(selector_key *key) {
     struct state_machine *stm   = &client_data->stm;
     stm_handler_close(stm, key);
 
+
     close(key->fd);
     if (key->fd == client_data->client_fd) {
         client_data->client_fd = -1;
@@ -143,9 +141,8 @@ static void socksv5_close(selector_key *key) {
 
     if (client_data->origin_fd == -1 && client_data->client_fd == -1) {
         socksv5_destroy(ATTACHMENT(key));
+        less_connections(); //TODO puede ser q vaya en la funcion de socksv5_done
     }
-
-    less_connections(); //TODO puede ser q vaya en la funcion de socksv5_done
 }
 
 //chequear
@@ -164,7 +161,7 @@ static void socksv5_done(selector_key* key) {
 }
 
 
-static client_data * socks5_new(int client_fd){
+static client_data * socksv5_new(int client_fd){
     client_data * new_client = calloc(1, sizeof(struct client_data));
     
     if(new_client != NULL){
@@ -172,6 +169,8 @@ static client_data * socks5_new(int client_fd){
         new_client->stm.max_state = SOCKS_ERROR;
         new_client->stm.states = client_actions;
         new_client->client_fd = client_fd;
+        new_client->client_eof = 0;
+        new_client->origin_eof = 0;
         new_client->origin_fd = -1;
         buffer_init(&new_client->client_to_sv, BUFFER_SIZE, new_client->client_to_sv_raw);
         buffer_init(&new_client->sv_to_client, BUFFER_SIZE, new_client->sv_to_client_raw);
@@ -209,7 +208,7 @@ void socks_v5_passive_accept(selector_key * selector_key){
         return;
     }
 
-    state = socks5_new(client);
+    state = socksv5_new(client);
     if(state == NULL){
         return;
     }

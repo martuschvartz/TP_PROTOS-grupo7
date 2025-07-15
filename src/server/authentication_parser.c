@@ -88,7 +88,6 @@ void auth_parse(auth_parser * ap, buffer * buffer) {
             auth_parse_characters(ap, buffer);
         }
         else {
-            // log error
             return;
         }
     }

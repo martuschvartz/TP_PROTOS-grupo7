@@ -115,9 +115,45 @@ int is_req_done(req_parser *rp) {
     return rp->current_state == REQ_DONE || rp->current_state == REQ_ERROR;
 }
 
-int req_generate_response(req_parser *rp, buffer *buffer) {
-    uint8_t response[] = {PROTOCOL_VERSION, rp->connection_status, RSV, IPV4, 0x00, 0x00, 0x00, 0x00};
-    for (int i = 0; i < sizeof(response); i++) {
+int req_generate_response(req_parser *rp, buffer *buffer, const struct sockaddr_storage *bnd_addr, socklen_t bnd_addr_len) {
+    uint8_t response[1 + 1 + 1 + 1 + 16 + 2];
+    int offset = 0;
+
+    response[offset++] = PROTOCOL_VERSION;
+    response[offset++] = rp->connection_status;
+    response[offset++] = RSV;
+
+    if (rp->connection_status == CON_SUCCEEDED) {
+        if (bnd_addr->ss_family == AF_INET) {
+            struct sockaddr_in *ipv4 = (struct sockaddr_in *)bnd_addr;
+            response[offset++] = IPV4;
+            memcpy(&response[offset], &ipv4->sin_addr.s_addr, 4);
+            offset += 4;
+            memcpy(&response[offset], &ipv4->sin_port, 2);
+            offset += 2;
+        } else if (bnd_addr->ss_family == AF_INET6) {
+            struct sockaddr_in6 *ipv6 = (struct sockaddr_in6 *)bnd_addr;
+            response[offset++] = IPV6;
+            memcpy(&response[offset], &ipv6->sin6_addr.s6_addr, 16);
+            offset += 16;
+            memcpy(&response[offset], &ipv6->sin6_port, 2);
+            offset += 2;
+        } else {
+            response[offset++] = IPV4;
+            memset(&response[offset], 0, 4);
+            offset += 4;
+            memset(&response[offset], 0, 2);
+            offset += 2;
+        }
+    } else {
+        response[offset++] = IPV4;
+        memset(&response[offset], 0, 4);
+        offset += 4;
+        memset(&response[offset], 0, 2);
+        offset += 2;
+    }
+
+    for (int i = 0; i < offset; i++) {
         if (!buffer_can_write(buffer)) {
             return 1;
         }
@@ -151,7 +187,6 @@ void req_parse(req_parser *rp, buffer *buffer) {
                 req_parse_dst_port(rp, buffer_read(buffer));
                 break;
             default:
-                //log error?
                 break;
         }
     }

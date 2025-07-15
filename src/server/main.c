@@ -16,7 +16,7 @@
 #include "users.h"
 #include <manager.h>
 
-#define MAX_CLIENTS 3 // 500??
+#define MAX_CLIENTS 500
 #define BUFFER_SIZE 1024
 
 static bool done = false;
@@ -49,7 +49,7 @@ int set_server_sock_address(int port, void *res_address, int *res_address_length
         struct sockaddr_in6 sock_ipv6;
         memset(&sock_ipv6, 0, sizeof(sock_ipv6));
         sock_ipv6.sin6_family= AF_INET6;
-        inet_pton(AF_INET6, sock_addrs, &sock_ipv6.sin6_addr); //convertimos a binario para q sea utilizable
+        inet_pton(AF_INET6, sock_addrs, &sock_ipv6.sin6_addr);
         sock_ipv6.sin6_port= htons(port);
 
         *((struct sockaddr_in6 *)res_address) = sock_ipv6;
@@ -60,7 +60,7 @@ int set_server_sock_address(int port, void *res_address, int *res_address_length
     struct sockaddr_in sock_ipv4;
     memset(&sock_ipv4, 0, sizeof(sock_ipv4));
     sock_ipv4.sin_family = AF_INET;
-    inet_pton(AF_INET, sock_addrs, &sock_ipv4.sin_addr.s_addr); //convertimos a binario para q sea utilizable
+    inet_pton(AF_INET, sock_addrs, &sock_ipv4.sin_addr.s_addr);
     sock_ipv4.sin_port = htons(port);
 
     *((struct sockaddr_in *)res_address) = sock_ipv4;
@@ -80,10 +80,10 @@ int main(int argc, char **argv)
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr_len = sizeof(server_addr);
 
-    create_logs_sb(); // sirve tener el logger antes del parse para ya poder ir juntando datos
+    create_logs_sb();
     struct socks5args socksArgs;
     init_users();
-    socksArgs.cant++; // ya que cree el admin con la funcion initUsers
+    socksArgs.cant++;
     parse_args(argc, argv, &socksArgs);
     for (int i = 0; i < socksArgs.cant; i++)
     {

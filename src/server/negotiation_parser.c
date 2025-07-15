@@ -31,7 +31,6 @@ void negotiation_parse(neg_parser *np, buffer *buffer) {
                 negotiation_parse_methods(np, buffer_read(buffer));
                 break;
             default:
-                // log error
                 break;
         }
     }
