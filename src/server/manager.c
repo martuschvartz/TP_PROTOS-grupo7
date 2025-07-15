@@ -219,6 +219,12 @@ static void manager_read(struct selector_key *key)
     }
     data->buffer[n] = 0;
     data->buffer[strcspn(data->buffer, "\r\n")] = 0;
+    if (strlen(data->buffer) == 0)
+    {
+        // línea vacía
+        send_response(data->fd, "No se recibió ningún comando. Escriba HELP para ver opciones.\r\n", true);
+        return;
+    }
     handle_command(data->fd, data->buffer, data);
 }
 
@@ -256,8 +262,10 @@ void handle_list(int fd)
 void handle_add_user(int fd, char *user, char *pass)
 {
     if (!user || !pass)
+    {
         send_response(fd, "Faltan parámetros: ADD-USER <usuario> <constraseña>\r\n", true);
-    return;
+        return;
+    }
     if (new_user(user, pass) == 0)
     {
         char msg[MAX_LENGTH_MSG];
@@ -273,8 +281,10 @@ void handle_add_user(int fd, char *user, char *pass)
 void handle_delete_user(int fd, char *user)
 {
     if (!user)
+    {
         send_response(fd, "Falta parámetro para DELETE-USER\r\n", true);
-    return;
+        return;
+    }
     if (delete_user(user) == 0)
     {
         char msg[MAX_LENGTH_MSG];
