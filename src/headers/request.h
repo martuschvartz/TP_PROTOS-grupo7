@@ -3,6 +3,7 @@
 #include <selector.h>
 
 #include "socks5.h"
+#include "users.h"
 
 typedef struct resolve_job {
     fd_selector selector;

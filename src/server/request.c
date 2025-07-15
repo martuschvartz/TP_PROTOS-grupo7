@@ -177,6 +177,57 @@ unsigned request_write(selector_key * key) {
         return SOCKS_ERROR;
     }
 
+    char *uname = data->uname;
+    StringBuilder *user_sb = get_access(uname);
+    if(user_sb == NULL){
+        user_sb = create_access(uname);
+    }
+    time_t now = time(NULL);
+    struct tm* tm_info = localtime(&now);
+    char timestamp[32];
+    strftime(timestamp, sizeof(timestamp), "%Y-%m-%dT%H:%M:%S", tm_info);
+    sb_append(user_sb, timestamp);
+    sb_append(user_sb, "\t");
+    sb_append(user_sb, uname);
+    sb_append(user_sb, "\t");
+    sb_append(user_sb, "A\t");
+
+    if(data->client_address.ss_family == AF_INET){
+        //IPV4
+        struct sockaddr_in* info = (struct sockaddr_in*) (&data->client_address);
+        char port_str[6]; 
+        snprintf(port_str, sizeof(port_str), "%u", info->sin_port);
+        char ip_str[INET_ADDRSTRLEN]; 
+        inet_ntop(AF_INET, &info->sin_addr, ip_str, sizeof(ip_str));
+
+        sb_append(user_sb, ip_str);
+        sb_append(user_sb, "\t");
+        sb_append(user_sb, port_str);
+    }
+    else if(data->client_address.ss_family == AF_INET6){
+        //IPV6
+        struct sockaddr_in6* info =(struct sockaddr_in6*) (&data->client_address);
+        char port_str[6]; 
+        snprintf(port_str, sizeof(port_str), "%u", info->sin6_port);
+        char ip_str[INET6_ADDRSTRLEN];
+        inet_ntop(AF_INET6, &info->sin6_addr, ip_str, sizeof(ip_str));
+
+        sb_append(user_sb, ip_str);
+        sb_append(user_sb, "\t");
+        sb_append(user_sb, port_str);
+    }
+    
+    sb_append(user_sb, "\t");
+    sb_append(user_sb, (char *) data->handshake.request_parser.address.buffer);
+    sb_append(user_sb, "\t");
+    char port_str[6]; 
+    snprintf(port_str, sizeof(port_str), "%u", data->handshake.request_parser.port);
+    sb_append(user_sb, port_str);
+    sb_append(user_sb, "\t");
+    sb_append(user_sb, status_to_string(data->handshake.request_parser.connection_status));
+    sb_append(user_sb, "\n");
+
+
     return COPY;
 }
 
@@ -200,7 +251,7 @@ static void* request_resolve_domain_name(void* arg) {
     if (status != 0) {
         StringBuilder *sb = sb_create();
         sb_append(sb, "'getaddrinfo' error: ");
-        sb_append(sb, int_to_string(gai_strerror(status)));
+        sb_append(sb, gai_strerror(status));
         our_log(ERROR, sb_get_string(sb));
         sb_free(sb);
         data->origin_addr = NULL;

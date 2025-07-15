@@ -269,3 +269,21 @@ StringBuilder *get_access(const char *name)
 
     return users[index].access;
 }
+
+StringBuilder *create_access(char* name){
+
+
+    int index = user_exists(name);
+    if(index<0){
+        StringBuilder *sb = sb_create();
+        sb_append(sb, "User ");
+        sb_append(sb, name);
+        sb_append(sb, ", does not exist.\n");
+        our_log(WARNING, sb_get_string(sb));
+        sb_free(sb);
+    }
+    users[index].access = sb_create();
+
+
+    return users[index].access;
+}
