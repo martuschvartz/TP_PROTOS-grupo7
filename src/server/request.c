@@ -23,11 +23,8 @@ static unsigned req_generate_response_error(selector_key * key, connection_statu
     rp->current_state = REQ_ERROR;
     rp->connection_status = msg;
 
-    // For error responses, BND.ADDR and BND.PORT are typically zero.
-    // Use a dummy sockaddr_storage to pass to req_generate_response.
-    struct sockaddr_storage dummy_bnd_addr;
-    memset(&dummy_bnd_addr, 0, sizeof(dummy_bnd_addr));
-    dummy_bnd_addr.ss_family = AF_INET; // Default to IPv4 for dummy bound address
+    struct sockaddr_storage dummy_bnd_addr = {0};
+    dummy_bnd_addr.ss_family = AF_INET;
 
     if (selector_set_interest_key(key, OP_WRITE) != SELECTOR_SUCCESS || req_generate_response(rp, &ATTACHMENT(key)->sv_to_client, &dummy_bnd_addr, sizeof(dummy_bnd_addr))) {
         return SOCKS_ERROR;
@@ -54,7 +51,7 @@ static unsigned handle_request(selector_key * key) {
         }
         sockaddr->sin_family = AF_INET;
         sockaddr->sin_addr = rp.address.address_class.ipv4;
-        sockaddr->sin_port = htons(rp.port); // Convert host port to network byte order
+        sockaddr->sin_port = htons(rp.port);
 
         data->origin_addr->ai_family = AF_INET;
         data->origin_addr->ai_socktype = SOCK_STREAM;
@@ -78,7 +75,7 @@ static unsigned handle_request(selector_key * key) {
         }
         sockaddr->sin6_family = AF_INET6;
         sockaddr->sin6_addr = rp.address.address_class.ipv6;
-        sockaddr->sin6_port = htons(rp.port); // Convert host port to network byte order
+        sockaddr->sin6_port = htons(rp.port);
 
         data->origin_addr->ai_family = AF_INET6;
         data->origin_addr->ai_socktype = SOCK_STREAM;
@@ -139,10 +136,8 @@ unsigned request_read(selector_key * key) {
 
     if (is_req_done(&data->handshake.request_parser)) {
         if (req_has_error(&data->handshake.request_parser)) {
-            // Error response, use dummy bound address data
-            struct sockaddr_storage dummy_bnd_addr;
-            memset(&dummy_bnd_addr, 0, sizeof(dummy_bnd_addr));
-            dummy_bnd_addr.ss_family = AF_INET; // Default to IPv4 for dummy
+            struct sockaddr_storage dummy_bnd_addr = {0};
+            dummy_bnd_addr.ss_family = AF_INET;
 
             if (req_generate_response(&data->handshake.request_parser, &data->sv_to_client, &dummy_bnd_addr, sizeof(dummy_bnd_addr)) || selector_set_interest_key(key, OP_WRITE) != SELECTOR_SUCCESS) {
                 return SOCKS_ERROR;
@@ -195,7 +190,7 @@ static void* request_resolve_domain_name(void* arg) {
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = 0;
 
-    char * domain_name = (char )data->handshake.request_parser.address.address_class.dn; // Cast to char
+    char * domain_name = data->handshake.request_parser.address.address_class.dn;
     char port[6] ={0};
     snprintf(port, 6,"%d", data->handshake.request_parser.port);
 
@@ -231,7 +226,7 @@ static unsigned initiate_origin_connection(selector_key * key) {
 
     if (data->origin_fd != -1) {
         selector_unregister_fd(key->s, data->origin_fd);
-        close(data->origin_fd); // Close existing fd
+        close(data->origin_fd);
         data->origin_fd = -1;
     }
 
@@ -315,11 +310,9 @@ unsigned request_connect(selector_key * key) {
         rp->connection_status = CON_SUCCEEDED;
 
         if (data->origin_addr != NULL) {
-            // Free the addrinfo if it was allocated by getaddrinfo (DN case)
             if (data->handshake.request_parser.atyp == DN) {
                 freeaddrinfo(data->origin_addr);
             } else {
-                // If it was IPV4 or IPV6, it was allocated by malloc, so free ai_addr then origin_addr
                 if (data->origin_addr->ai_addr != NULL) {
                     free(data->origin_addr->ai_addr);
                 }
@@ -329,7 +322,6 @@ unsigned request_connect(selector_key * key) {
             data->current_origin_addr = NULL;
         }
 
-        // Get the bound address and port from the origin socket
         struct sockaddr_storage bnd_addr;
         socklen_t bnd_addr_len = sizeof(bnd_addr);
         if (getsockname(data->origin_fd, (struct sockaddr *)&bnd_addr, &bnd_addr_len) == -1) {
@@ -347,10 +339,9 @@ unsigned request_connect(selector_key * key) {
         return REQ_WRITE;
     }
 
-    // Connect failed. Try next address or return error.
     struct addrinfo * address = data->current_origin_addr->ai_next;
     selector_unregister_fd(key->s, data->origin_fd);
-    close(data->origin_fd); // Close the failed socket
+    close(data->origin_fd);
     data->origin_fd = -1;
     if (address == NULL) {
         return req_generate_response_error(key, CON_HOST_UNREACHABLE);
