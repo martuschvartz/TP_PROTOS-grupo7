@@ -22,7 +22,9 @@ static bool done = false;
 static void sigterm_handler(const int signal){
     StringBuilder *sb = sb_create();
     sb_append(sb, "Signal ");
-    sb_append(sb, int_to_string(signal));
+    char* str = int_to_string(signal);
+    sb_append(sb, str);
+    free(str);
     sb_append(sb, ", cleaning up and exiting");
     our_log(INFO, sb_get_string(sb));
     sb_free(sb);
@@ -110,7 +112,9 @@ int main(int argc, char **argv)
 
     StringBuilder *sb = sb_create();
     sb_append(sb, "Listening on TCP port ");
-    sb_append(sb, int_to_string(socksArgs.socks_port));
+    char* str = int_to_string(socksArgs.socks_port);
+    sb_append(sb, str);
+    free(str);
     our_log(INFO, sb_get_string(sb));
     sb_free(sb);
 
@@ -144,7 +148,9 @@ int main(int argc, char **argv)
 
     StringBuilder *sb2 = sb_create();
     sb_append(sb2, "Listening on TCP port ");
-    sb_append(sb2, int_to_string(socksArgs.mng_port));
+    char * str2 = int_to_string(socksArgs.mng_port);
+    sb_append(sb2, str2);
+    free(str2);
     our_log(INFO, sb_get_string(sb2));
     sb_free(sb2);
 

@@ -125,7 +125,9 @@ void parse_args(const int argc, char **argv, struct socks5args *args)
             {
                 StringBuilder *sb = sb_create();
                 sb_append(sb, "Maximun number of command line users reached: ");
-                sb_append(sb, int_to_string(MAX_USERS));
+                char * str = int_to_string(MAX_USERS);
+                sb_append(sb, str);
+                free(str);
                 our_log(WARNING, sb_get_string(sb));
                 sb_free(sb);
                 exit(1);
@@ -143,7 +145,9 @@ void parse_args(const int argc, char **argv, struct socks5args *args)
             {
             StringBuilder *sb2 = sb_create();
             sb_append(sb2, "Unknown argument: ");
-            sb_append(sb2, int_to_string(c));
+            char * str = int_to_string(c);
+            sb_append(sb2, str);
+            free(str);
             our_log(ERROR, sb_get_string(sb2));
             sb_free(sb2);
             exit(1);

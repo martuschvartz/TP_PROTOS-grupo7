@@ -559,7 +559,9 @@ selector_select(fd_selector s) {
                         if(-1 == fcntl(i, F_GETFD, 0)) {
                             StringBuilder *sb = sb_create();
                             sb_append(sb, "Bad descripto detected: ");
-                            sb_append(sb, int_to_string(i));
+                            char* str = int_to_string(i);
+                            sb_append(sb, str);
+                            free(str);
                             our_log(WARNING, sb_get_string(sb));
                             sb_free(sb);
                         }
