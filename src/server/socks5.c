@@ -188,7 +188,7 @@ static const fd_handler socks5_handler = {
 };
 
 // check
-fd_handler * get_socks5_handlers() {
+const fd_handler * get_socks5_handlers() {
     return &socks5_handler;
 }
 

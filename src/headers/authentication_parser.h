@@ -62,8 +62,8 @@ typedef struct auth_parser {
 
     uint8_t length;
 
-    unsigned char uname[MAX_LENGTH + 1];
-    unsigned char passwd[MAX_LENGTH + 1];
+    char uname[MAX_LENGTH + 1];
+    char passwd[MAX_LENGTH + 1];
 }auth_parser;
 
 /**

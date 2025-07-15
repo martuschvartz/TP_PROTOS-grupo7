@@ -21,8 +21,7 @@
 
 static bool done = false;
 
-static void sigterm_handler(const int signal)
-{
+static void sigterm_handler(const int signal){
     StringBuilder *sb = sb_create();
     sb_append(sb, "Signal ");
     sb_append(sb, int_to_string(signal));
@@ -41,8 +40,7 @@ static void sigterm_handler(const int signal)
  *  @param res_address_length, address length result
  *  returns 1 error, 0 on success
  */
-int set_server_sock_address(int port, void *res_address, int *res_address_length, char * sock_addrs)
-{
+int set_server_sock_address(int port, void *res_address, int *res_address_length, char * sock_addrs){
     //si es ipv6 tiene ':'
     int ipv6 = strchr(sock_addrs, ':') != NULL;
     if(ipv6){
@@ -85,34 +83,29 @@ int main(int argc, char **argv)
     init_users();
     socksArgs.cant++;
     parse_args(argc, argv, &socksArgs);
-    for (int i = 0; i < socksArgs.cant; i++)
-    {
+    for (int i = 0; i < socksArgs.cant; i++){
         new_user(socksArgs.users[i].name, socksArgs.users[i].pass);
     }
 
-    if (set_server_sock_address(socksArgs.socks_port, &server_addr, &server_addr_len, socksArgs.socks_addr))
-    {
+    if (set_server_sock_address(socksArgs.socks_port, &server_addr, &server_addr_len, socksArgs.socks_addr)){
         err_msg = "Invalid server socket address";
         goto finally;
     }
 
     const int server = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (server < 0)
-    {
+    if (server < 0){
         err_msg = "Unable to create server socket";
         goto finally;
     }
 
     setsockopt(server, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
 
-    if (bind(server, (struct sockaddr *)&server_addr, server_addr_len) < 0)
-    {
+    if (bind(server, (struct sockaddr *)&server_addr, server_addr_len) < 0){
         err_msg = "Unable to bind socket";
         goto finally;
     }
 
-    if (listen(server, MAX_CLIENTS) < 0)
-    {
+    if (listen(server, MAX_CLIENTS) < 0){
         err_msg = "Unable to listen";
         goto finally;
     }
@@ -130,29 +123,25 @@ int main(int argc, char **argv)
     memset(&manager_addr, 0, sizeof(manager_addr));
     manager_addr_len = sizeof(manager_addr);
 
-    if (set_server_sock_address(socksArgs.mng_port, &manager_addr, &manager_addr_len, socksArgs.socks_addr))
-    {
+    if (set_server_sock_address(socksArgs.mng_port, &manager_addr, &manager_addr_len, socksArgs.socks_addr)){
         err_msg = "Invalid manager socket address";
         goto finally;
     }
 
     const int manager = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (manager < 0)
-    {
+    if (manager < 0){
         err_msg = "Unable to create manager socket";
         goto finally;
     }
 
     setsockopt(manager, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
 
-    if (bind(manager, (struct sockaddr *)&manager_addr, manager_addr_len) < 0)
-    {
+    if (bind(manager, (struct sockaddr *)&manager_addr, manager_addr_len) < 0){
         err_msg = "Unable to bind socket";
         goto finally;
     }
 
-    if (listen(manager, MAX_CLIENTS) < 0)
-    {
+    if (listen(manager, MAX_CLIENTS) < 0){
         err_msg = "Unable to listen";
         goto finally;
     }
@@ -168,8 +157,7 @@ int main(int argc, char **argv)
     signal(SIGTERM, sigterm_handler);
     signal(SIGINT, sigterm_handler);
 
-    if (selector_fd_set_nio(server) == -1)
-    {
+    if (selector_fd_set_nio(server) == -1){
         err_msg = "Unable to set server socket to nonblock";
         goto finally;
     }
@@ -180,15 +168,13 @@ int main(int argc, char **argv)
             .tv_nsec = 0,
         },
     };
-    if (0 != selector_init(&conf))
-    {
+    if (0 != selector_init(&conf)){
         err_msg = "Unable to initialize selector";
         goto finally;
     }
 
     selector = selector_new(1024);
-    if (selector == NULL)
-    {
+    if (selector == NULL){
         err_msg = "unable to create selector";
         goto finally;
     }
@@ -208,24 +194,20 @@ int main(int argc, char **argv)
 
     selector_status = selector_register(selector, manager, &managerDory, OP_READ, NULL);
 
-    if (selector_status != SELECTOR_SUCCESS)
-    {
+    if (selector_status != SELECTOR_SUCCESS){
         err_msg = "Unable to register server socket";
         goto finally;
     }
-    while (!done)
-    {
+    while (!done){
         err_msg = NULL;
         selector_status = selector_select(selector);
-        if (selector_status != SELECTOR_SUCCESS)
-        {
+        if (selector_status != SELECTOR_SUCCESS){
             err_msg = "Serving";
             goto finally;
         }
     }
 
-    if (err_msg == NULL)
-    {
+    if (err_msg == NULL){
         err_msg = "Closing server";
     }
 
@@ -234,9 +216,8 @@ int main(int argc, char **argv)
 finally:
     close_users();
     log_free();
-    
-    if (selector_status != SELECTOR_SUCCESS)
-    {
+
+    if (selector_status != SELECTOR_SUCCESS){
         StringBuilder *sb = sb_create();
         sb_append(sb, (err_msg == NULL) ? "" : err_msg);
         sb_append(sb, ": ");
@@ -245,26 +226,20 @@ finally:
         sb_free(sb);
         ret = 2;
     }
-    else if (err_msg)
-    {
+    else if (err_msg){
         perror(err_msg);
         ret = 1;
     }
-    if (selector != NULL)
-    {
+    if (selector != NULL){
         selector_destroy(selector);
     }
     selector_close();
 
-    // socksv5_pool_destroy();
-
-    if (manager >= 0)
-    {
-        close(manager);
-    }
-    if (server >= 0)
-    {
+    if (server >= 0){
         close(server);
+    }
+    if (manager >= 0){
+        close(manager);
     }
     return ret;
 }

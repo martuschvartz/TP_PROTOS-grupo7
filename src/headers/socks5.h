@@ -152,6 +152,6 @@ typedef struct client_data{
 
 void socks_v5_passive_accept(selector_key * selector_key);
 
-fd_handler * get_socks5_handlers();
+const fd_handler * get_socks5_handlers();
 
 #endif

@@ -41,11 +41,10 @@ typedef enum req_atyp {
 
 
 typedef struct address {
-    // todo for logs
     union{
         struct in_addr ipv4;
         struct in6_addr ipv6;
-        uint8_t dn[MAX_ADDR_LENGTH + 1];
+        char dn[MAX_ADDR_LENGTH + 1];
     }address_class;
 
     uint8_t buffer[MAX_ADDR_LENGTH + 1];
