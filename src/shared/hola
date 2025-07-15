@@ -1,0 +1,196 @@
+#include <stdio.h>
+#include <signal.h>
+#include <selector.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <errno.h>
+
+#define DEFAULT_PORT 1081
+#define BUFFER_SIZE 1024
+
+static bool done = false;
+
+static void stdin_read(struct selector_key *key);
+static void socket_read(struct selector_key *key);
+static void socket_close(struct selector_key *key);
+
+typedef struct {
+    int sockfd;
+} client_data;
+
+static void sigterm_handler(const int signal) {
+    (void)signal; // evitar warning
+    done = true;
+}
+
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        printf("Uso: %s <ip> [puerto]\n", argv[0]);
+        return 1;
+    }
+
+    const char *ip = argv[1];
+    int port = (argc >= 3) ? atoi(argv[2]) : DEFAULT_PORT;
+
+    // Crear socket
+    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0) {
+        perror("socket");
+        return 1;
+    }
+
+    struct sockaddr_in serv_addr;
+    memset(&serv_addr, 0, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(port);
+
+    // Configurar IP del servidor
+    if (inet_pton(AF_INET, ip, &serv_addr.sin_addr) <= 0) {
+        fprintf(stderr, "Dirección IP inválida: %s\n", ip);
+        close(sockfd);
+        return 1;
+    }
+
+    // Conectar
+    if (connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
+        perror("connect");
+        close(sockfd);
+        return 1;
+    }
+
+    // Señales para salir
+    signal(SIGTERM, sigterm_handler);
+    signal(SIGINT, sigterm_handler);
+
+    // Socket no bloqueante
+    if (selector_fd_set_nio(sockfd) == -1) {
+        perror("selector_fd_set_nio");
+        close(sockfd);
+        return 1;
+    }
+
+    // Inicializar selector
+    const struct selector_init conf = {
+        .signal = SIGALRM,
+        .select_timeout = {
+            .tv_sec = 10,
+            .tv_nsec = 0,
+        },
+    };
+    if (selector_init(&conf) != SELECTOR_SUCCESS) {
+        fprintf(stderr, "No se pudo inicializar selector\n");
+        close(sockfd);
+        return 1;
+    }
+
+    fd_selector selector = selector_new(1024);
+    if (!selector) {
+        fprintf(stderr, "No se pudo crear selector\n");
+        selector_close();
+        close(sockfd);
+        return 1;
+    }
+
+    // Data compartida para los handlers
+    client_data *data = malloc(sizeof(client_data));
+    if (!data) {
+        fprintf(stderr, "No hay memoria para client_data\n");
+        selector_destroy(selector);
+        selector_close();
+        close(sockfd);
+        return 1;
+    }
+    data->sockfd = sockfd;
+
+    // Handlers
+    const struct fd_handler stdin_handler = {
+        .handle_read = stdin_read,
+    };
+
+    const struct fd_handler socket_handler = {
+        .handle_read = socket_read,
+        .handle_close = socket_close,
+    };
+
+    // Registrar el socket y stdin en el selector
+    selector_status st1 = selector_register(selector, sockfd, &socket_handler, OP_READ, data);
+    selector_status st2 = selector_register(selector, STDIN_FILENO, &stdin_handler, OP_READ, data);
+
+    if (st1 != SELECTOR_SUCCESS || st2 != SELECTOR_SUCCESS) {
+        fprintf(stderr, "Error registrando descriptores en selector\n");
+        free(data);
+        selector_destroy(selector);
+        selector_close();
+        close(sockfd);
+        return 1;
+    }
+
+    printf("Conectado a %s:%d. Escribí comandos y serán enviados.\n", ip, port);
+
+    // Loop principal
+    while (!done) {
+        if (selector_select(selector) != SELECTOR_SUCCESS) {
+            fprintf(stderr, "Error en selector_select\n");
+            break;
+        }
+    }
+
+    printf("\nCerrando cliente...\n");
+
+    // Desregistrar y liberar recursos
+    selector_unregister_fd(selector, sockfd);
+    selector_unregister_fd(selector, STDIN_FILENO);
+    selector_destroy(selector);
+    selector_close();
+    close(sockfd);
+    free(data);
+
+    return 0;
+}
+
+// === HANDLERS ===
+
+// Leer del stdin y mandar al socket
+static void stdin_read(struct selector_key *key) {
+    client_data *data = key->data;
+    char buffer[BUFFER_SIZE];
+
+    if (!fgets(buffer, sizeof(buffer), stdin)) {
+        // EOF -> desregistrar stdin
+        selector_unregister_fd(key->s, STDIN_FILENO);
+        return;
+    }
+    send(data->sockfd, buffer, strlen(buffer), 0);
+}
+
+// Leer respuesta del servidor y mostrarla
+static void socket_read(struct selector_key *key) {
+    client_data *data = key->data;
+    char buffer[BUFFER_SIZE];
+
+    int n = recv(data->sockfd, buffer, sizeof(buffer) - 1, 0);
+    if (n <= 0) {
+        // conexión cerrada o error
+        printf("\nServidor cerró la conexión.\n");
+        selector_unregister_fd(key->s, data->sockfd);
+        done = true;
+        return;
+    }
+
+    buffer[n] = '\0';
+    printf("%s", buffer);
+    fflush(stdout);
+}
+
+// Cerrar socket cuando el selector lo desregistre
+static void socket_close(struct selector_key *key) {
+    client_data *data = key->data;
+    if (data) {
+        close(data->sockfd);
+    }
+}
