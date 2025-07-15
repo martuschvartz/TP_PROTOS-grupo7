@@ -85,7 +85,6 @@ void req_parse_dst_addr(req_parser *rp, uint8_t byte) {
                 rp->address.address_class.dn[rp->addr_len] = '\0';
                 break;
             default:
-                //log error?
                 return;
         }
         rp->current_state = REQ_DST_PORT;

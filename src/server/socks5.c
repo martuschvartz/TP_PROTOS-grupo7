@@ -161,7 +161,7 @@ static void socksv5_done(selector_key* key) {
 }
 
 
-static client_data * socksv5_new(int client_fd){
+static client_data * socksv5_new(int client_fd, struct sockaddr_storage client_address){
     client_data * new_client = calloc(1, sizeof(struct client_data));
     
     if(new_client != NULL){
@@ -170,6 +170,7 @@ static client_data * socksv5_new(int client_fd){
         new_client->stm.states = client_actions;
         new_client->client_fd = client_fd;
         new_client->client_eof = 0;
+        new_client->client_address = client_address;
         new_client->origin_eof = 0;
         new_client->origin_fd = -1;
         buffer_init(&new_client->client_to_sv, BUFFER_SIZE, new_client->client_to_sv_raw);
@@ -199,16 +200,14 @@ void socks_v5_passive_accept(selector_key * selector_key){
 
     const int client = accept(selector_key->fd, (struct sockaddr *)&client_addr,
                               &client_addr_len);
-    if (client == -1)
-    {
+    if (client == -1){
         return;
     }
-    if (selector_fd_set_nio(client) == -1)
-    {
+    if (selector_fd_set_nio(client) == -1){
         return;
     }
 
-    state = socksv5_new(client);
+    state = socksv5_new(client, client_addr);
     if(state == NULL){
         return;
     }

@@ -137,6 +137,7 @@ typedef struct client_data{
 
     int client_fd;
     int client_eof;
+    struct sockaddr_storage client_address;
     buffer client_to_sv;
     uint8_t client_to_sv_raw[BUFFER_SIZE];
 
