@@ -11,6 +11,7 @@
 #include <string.h>
 #include <selector.h>
 #include <users.h>
+#include <metrics.h>
 
 /**
  * Función que se registra como handler para aceptar nuevas conexiones
