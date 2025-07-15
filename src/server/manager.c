@@ -52,12 +52,25 @@ void trim_newline(char *str)
 
 void send_response(int client_fd, const char *msg, bool is_error)
 {
-    char full_msg[MAX_LENGTH_MSG];
+    const char *prefix = is_error ? ERR : OK;
+    size_t prefix_len = strlen(prefix);
+    size_t msg_len = strlen(msg);
 
-    snprintf(full_msg, sizeof(full_msg), "%s%s", is_error ? ERR : OK, msg);
-    send(client_fd, full_msg, strlen(full_msg), 0);
+    size_t total_len = prefix_len + msg_len;
+    char *full_msg = malloc(total_len + 1); // +1 para el '\0'
+    if (!full_msg)
+    {
+        send(client_fd, "-ERR Error interno de memoria\r\n", 31, 0);
+        return;
+    }
+
+    memcpy(full_msg, prefix, prefix_len);
+    memcpy(full_msg + prefix_len, msg, msg_len);
+    full_msg[total_len] = '\0';
+
+    send(client_fd, full_msg, total_len, 0);
+    free(full_msg);
 }
-
 void handle_auth_command(int client_fd, char *cmd, char *arg1, manager_data *data)
 {
     if (strcmp(cmd, "USER") == 0)
@@ -133,7 +146,7 @@ void handle_command(int client_fd, char *input, manager_data *manager_data)
         return;
     }
 
-    if (strcmp(cmd, "LIST") == 0)
+    if (strcmp(cmd, "LIST-USERS") == 0)
     {
         handle_list(client_fd);
     }
@@ -149,11 +162,11 @@ void handle_command(int client_fd, char *input, manager_data *manager_data)
     {
         handle_change_pass(client_fd, manager_data, arg1, arg2);
     }
-    else if (strcmp(cmd, "LIST-USER") == 0)
+    else if (strcmp(cmd, "USER-LOGS") == 0)
     {
         handle_list_user(client_fd, arg1);
     }
-    else if (strcmp(cmd, "STAT") == 0)
+    else if (strcmp(cmd, "STATS") == 0)
     {
         handle_stat(client_fd);
     }
@@ -261,18 +274,27 @@ void handle_list(int fd)
 {
     const Tuser *ulist = get_users();
     unsigned int count = get_user_count();
-    char msg[1024] = "Usuarios:\r\n"; // dinámico
+
+    StringBuilder *sb = sb_create();
+    if (!sb)
+    {
+        send_response(fd, "Error interno de memoria\r\n", true);
+        return;
+    }
+
+    sb_append(sb, "Usuarios:\r\n");
 
     for (unsigned int i = 0; i < count; i++)
     {
-        strcat(msg, " - ");
-        strcat(msg, ulist[i].name);
-        strcat(msg, " (");
-        strcat(msg, ulist[i].status == ADMIN ? "admin" : "commoner");
-        strcat(msg, ")");
-        strcat(msg, "\r\n");
+        sb_append(sb, " - ");
+        sb_append(sb, ulist[i].name);
+        sb_append(sb, " (");
+        sb_append(sb, ulist[i].status == ADMIN ? "admin" : "commoner");
+        sb_append(sb, ")\r\n");
     }
-    send_response(fd, msg, false);
+
+    send_response(fd, sb_get_string(sb), false);
+    sb_free(sb);
 }
 
 void handle_add_user(int fd, char *user, char *pass)
@@ -408,12 +430,22 @@ void handle_list_user(int fd, char *user)
 
 void handle_server_logs(int fd)
 {
-    char logs[1024] = "\n";
-    snprintf(logs + strlen(logs), sizeof(logs) - strlen(logs), "%s", get_logs());
-    strcat(logs, "----------------------------------\r\n");
+    const char *logs = get_logs();
     if (logs && strlen(logs) > 0)
     {
-        send_response(fd, logs, false);
+        StringBuilder *sb = sb_create();
+        if (!sb)
+        {
+            send_response(fd, "Error interno de memoria\r\n", true);
+            return;
+        }
+
+        sb_append(sb, "\n");
+        sb_append(sb, logs);
+        sb_append(sb, "----------------------------------\r\n");
+
+        send_response(fd, sb_get_string(sb), false);
+        sb_free(sb);
     }
     else
     {
@@ -466,13 +498,16 @@ void handle_help(int fd)
 {
     send_response(fd,
                   "Comandos disponibles:\r\n"
-                  " - LIST                              Listar todos los usuarios registrados\r\n"
+                  " - LIST-USERS                        Listar todos los usuarios registrados\r\n"
                   " - ADD-USER <usuario> <contraseña>   Crear un nuevo usuario\r\n"
                   " - DELETE-USER <usuario>             Eliminar un usuario existente\r\n"
                   " - CHANGE-PASS <vieja> <nueva>       Modificar su propia contraseña\r\n"
                   " - CHANGE-STATUS <usuario> <rol>     Cambiar el rol (\"admin\" o \"commoner\") de un usuario\r\n"
-                  " - LIST-USER <usuario>               Mostrar accesos registrados del usuario\r\n"
-                  " - STAT                              Ver métricas de uso del sistema\r\n"
+                  " - USER-LOGS <usuario>               Mostrar accesos registrados del usuario\r\n"
+                  " - SERVER-LOGS                       Ver los logs del servidor\r\n"
+                  " - SET-MAX-USERS <numero>            Definir la capacidad máxima de usuarios\r\n"
+                  " - GET-MAX-USERS                     Consultar la capacidad máxima de usuarios\r\n"
+                  " - STATS                             Ver métricas de uso del sistema\r\n"
                   " - HELP                              Mostrar esta ayuda\r\n"
                   " - QUIT                              Finalizar la sesión actual\r\n",
                   false);
