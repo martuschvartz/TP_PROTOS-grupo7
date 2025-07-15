@@ -16,8 +16,6 @@
 #include "users.h"
 #include <manager.h>
 
-#define MAX_CLIENTS 500
-#define BUFFER_SIZE 1024
 
 static bool done = false;
 
