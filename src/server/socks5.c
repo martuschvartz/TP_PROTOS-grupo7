@@ -122,7 +122,9 @@ static void socksv5_block(selector_key *key) {
 static void socksv5_close(selector_key *key) {
     client_data * client_data =ATTACHMENT(key);
     struct state_machine *stm   = &client_data->stm;
+    fprintf(stdout, "set to %d\n", key->fd);
     stm_handler_close(stm, key);
+
 
     close(key->fd);
     if (key->fd == client_data->client_fd) {
@@ -140,6 +142,7 @@ static void socksv5_close(selector_key *key) {
 
 //chequear
 static void socksv5_done(selector_key* key) {
+    fprintf(stdout, "in socksv5_done for %d\n", key->fd);
     const int fds[] = {
         ATTACHMENT(key)->client_fd,
         ATTACHMENT(key)->origin_fd,
