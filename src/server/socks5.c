@@ -122,7 +122,6 @@ static void socksv5_block(selector_key *key) {
 static void socksv5_close(selector_key *key) {
     client_data * client_data =ATTACHMENT(key);
     struct state_machine *stm   = &client_data->stm;
-    fprintf(stdout, "set to %d\n", key->fd);
     stm_handler_close(stm, key);
 
 
@@ -142,7 +141,6 @@ static void socksv5_close(selector_key *key) {
 
 //chequear
 static void socksv5_done(selector_key* key) {
-    fprintf(stdout, "in socksv5_done for %d\n", key->fd);
     const int fds[] = {
         ATTACHMENT(key)->client_fd,
         ATTACHMENT(key)->origin_fd,
@@ -157,7 +155,7 @@ static void socksv5_done(selector_key* key) {
 }
 
 
-static client_data * socks5_new(int client_fd){
+static client_data * socksv5_new(int client_fd){
     client_data * new_client = calloc(1, sizeof(struct client_data));
     
     if(new_client != NULL){
@@ -165,6 +163,8 @@ static client_data * socks5_new(int client_fd){
         new_client->stm.max_state = SOCKS_ERROR;
         new_client->stm.states = client_actions;
         new_client->client_fd = client_fd;
+        new_client->client_eof = 0;
+        new_client->origin_eof = 0;
         new_client->origin_fd = -1;
         buffer_init(&new_client->client_to_sv, BUFFER_SIZE, new_client->client_to_sv_raw);
         buffer_init(&new_client->sv_to_client, BUFFER_SIZE, new_client->sv_to_client_raw);
@@ -202,7 +202,7 @@ void socks_v5_passive_accept(selector_key * selector_key){
         return;
     }
 
-    state = socks5_new(client);
+    state = socksv5_new(client);
     if(state == NULL){
         return;
     }
