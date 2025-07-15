@@ -374,7 +374,7 @@ void handle_stat(int fd)
     unsigned int bytes = get_bytes();
     unsigned int count = get_user_count();
     char msg[MAX_LENGTH_MSG];
-    snprintf(msg, sizeof(msg), "\r\n-Total usuarios concurrentes: %u\r\n-Conexiones concurrentes: %d\r\n-Conexiones históricas: %d\r\n-Bytes transferidos: %d\r\n", count, current_connections, historical_connections, bytes);
+    snprintf(msg, sizeof(msg), "\r\n-Total usuarios: %u\r\n-Conexiones concurrentes: %d\r\n-Conexiones históricas: %d\r\n-Bytes transferidos: %d\r\n", count, current_connections, historical_connections, bytes);
     send_response(fd, msg, false);
 }
 
