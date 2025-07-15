@@ -27,7 +27,7 @@ static unsigned req_generate_response_error(selector_key * key, connection_statu
     struct sockaddr_storage dummy_bnd_addr = {0};
     dummy_bnd_addr.ss_family = AF_INET;
 
-    if (selector_set_interest_key(key, OP_WRITE) != SELECTOR_SUCCESS || req_generate_response(rp, &ATTACHMENT(key)->sv_to_client, &dummy_bnd_addr, sizeof(dummy_bnd_addr))) {
+    if (selector_set_interest_key(key, OP_WRITE) != SELECTOR_SUCCESS || req_generate_response(rp, &ATTACHMENT(key)->sv_to_client, &dummy_bnd_addr)) {
         return SOCKS_ERROR;
     }
     return REQ_WRITE;
@@ -140,7 +140,7 @@ unsigned request_read(selector_key * key) {
             struct sockaddr_storage dummy_bnd_addr = {0};
             dummy_bnd_addr.ss_family = AF_INET;
 
-            if (req_generate_response(&data->handshake.request_parser, &data->sv_to_client, &dummy_bnd_addr, sizeof(dummy_bnd_addr)) || selector_set_interest_key(key, OP_WRITE) != SELECTOR_SUCCESS) {
+            if (req_generate_response(&data->handshake.request_parser, &data->sv_to_client, &dummy_bnd_addr) || selector_set_interest_key(key, OP_WRITE) != SELECTOR_SUCCESS) {
                 return SOCKS_ERROR;
             }
             return REQ_WRITE;
@@ -276,7 +276,7 @@ static unsigned initiate_origin_connection(selector_key * key) {
             return SOCKS_ERROR;
         }
 
-        if (req_generate_response(rp, &data->sv_to_client, &bnd_addr, bnd_addr_len) || selector_set_interest_key(key, OP_WRITE) != SELECTOR_SUCCESS) {
+        if (req_generate_response(rp, &data->sv_to_client, &bnd_addr) || selector_set_interest_key(key, OP_WRITE) != SELECTOR_SUCCESS) {
             return SOCKS_ERROR;
         }
 
@@ -334,7 +334,7 @@ unsigned request_connect(selector_key * key) {
             return SOCKS_ERROR;
         }
 
-        if (req_generate_response(rp, &data->sv_to_client, &bnd_addr, bnd_addr_len) || selector_set_interest(key->s, data->client_fd, OP_WRITE) != SELECTOR_SUCCESS) {
+        if (req_generate_response(rp, &data->sv_to_client, &bnd_addr) || selector_set_interest(key->s, data->client_fd, OP_WRITE) != SELECTOR_SUCCESS) {
             return SOCKS_ERROR;
         }
 

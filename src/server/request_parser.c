@@ -115,7 +115,7 @@ int is_req_done(req_parser *rp) {
     return rp->current_state == REQ_DONE || rp->current_state == REQ_ERROR;
 }
 
-int req_generate_response(req_parser *rp, buffer *buffer, const struct sockaddr_storage *bnd_addr, socklen_t bnd_addr_len) {
+int req_generate_response(req_parser *rp, buffer *buffer, const struct sockaddr_storage *bnd_addr) {
     uint8_t response[1 + 1 + 1 + 1 + 16 + 2];
     int offset = 0;
 
@@ -152,6 +152,7 @@ int req_generate_response(req_parser *rp, buffer *buffer, const struct sockaddr_
         memset(&response[offset], 0, 2);
         offset += 2;
     }
+
 
     for (int i = 0; i < offset; i++) {
         if (!buffer_can_write(buffer)) {
