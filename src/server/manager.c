@@ -36,6 +36,7 @@ void handle_stat(int fd);
 void handle_list_user(int fd, char *user);
 void handle_quit(manager_data *data);
 void handle_help(int fd);
+void handle_server_logs(int fd);
 
 static const struct fd_handler manager_handler = {
     .handle_read = manager_read,
@@ -166,6 +167,10 @@ void handle_command(int client_fd, char *input, manager_data *manager_data)
     else if (strcmp(cmd, "QUIT") == 0)
     {
         handle_quit(manager_data);
+    }
+    else if (strcmp(cmd, "SERVER-LOGS") == 0)
+    {
+        handle_server_logs(client_fd);
     }
     else
     {
@@ -388,6 +393,21 @@ void handle_list_user(int fd, char *user)
     strcat(msg, "----------------------------------\r\n");
 
     send_response(fd, msg, false);
+}
+
+void handle_server_logs(int fd)
+{
+    char logs[1024] = "\n";
+    snprintf(logs + strlen(logs), sizeof(logs) - strlen(logs), "%s", get_logs());
+    strcat(logs, "----------------------------------\r\n");
+    if (logs && strlen(logs) > 0)
+    {
+        send_response(fd, logs, false);
+    }
+    else
+    {
+        send_response(fd, "No hay logs registrados.\r\n", false);
+    }
 }
 
 void handle_help(int fd)
