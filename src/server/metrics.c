@@ -1,8 +1,9 @@
 #include "metrics.h"
+#include <stdio.h>
 
 static unsigned int hConnections = 0;
 static unsigned int cConnections = 0;
-static unsigned int bytes = 0;
+unsigned int bytes = 0;
 
 void more_connections(){ 
     hConnections++;
@@ -22,6 +23,7 @@ unsigned int get_connections(){
 }
 
 void more_bytes(unsigned int b){
+    fprintf(stdout, "Agegamos bytes %d \n", b);
     bytes+=b;
 }
 
