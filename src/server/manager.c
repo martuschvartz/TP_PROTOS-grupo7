@@ -37,6 +37,7 @@ void handle_list_user(int fd, char *user);
 void handle_quit(manager_data *data);
 void handle_help(int fd);
 void handle_server_logs(int fd);
+void handle_set_max_users(int fd, char *arg);
 
 static const struct fd_handler manager_handler = {
     .handle_read = manager_read,
@@ -171,6 +172,16 @@ void handle_command(int client_fd, char *input, manager_data *manager_data)
     else if (strcmp(cmd, "SERVER-LOGS") == 0)
     {
         handle_server_logs(client_fd);
+    }
+    else if (strcmp(cmd, "SET-MAX-USERS") == 0)
+    {
+        handle_set_max_users(client_fd, arg1);
+    }
+    else if (strcmp(cmd, "GET-MAX-USERS") == 0)
+    {
+        char msg[MAX_LENGTH_MSG];
+        snprintf(msg, sizeof(msg), "La capacidad máxima de usuarios es: %u.\r\n", max_users);
+        send_response(client_fd, msg, false);
     }
     else
     {
@@ -408,6 +419,47 @@ void handle_server_logs(int fd)
     {
         send_response(fd, "No hay logs registrados.\r\n", false);
     }
+}
+
+void handle_set_max_users(int fd, char *arg)
+{
+    if (!arg)
+    {
+        send_response(fd, "Falta parámetro: SET-MAX-USERS <numero>\r\n", true);
+        return;
+    }
+
+    char *endptr;
+    long new_limit = strtol(arg, &endptr, 10);
+
+    if (*endptr != '\0' || new_limit <= 0)
+    {
+        send_response(fd, "Valor inválido. Debe ser un número positivo.\r\n", true);
+        return;
+    }
+
+    if ((unsigned int)new_limit < cantUsers)
+    {
+        send_response(fd, "No se puede reducir por debajo del número actual de usuarios.\r\n", true);
+        return;
+    }
+
+    // Redimensionamos el array
+    Tuser *new_users = realloc(users, new_limit * sizeof(Tuser));
+    if (new_users == NULL)
+    {
+        send_response(fd, "Error de memoria al redimensionar.\r\n", true);
+        return;
+    }
+
+    users = new_users;
+    max_users = (unsigned int)new_limit;
+
+    char msg[MAX_LENGTH_MSG];
+    snprintf(msg, sizeof(msg), "Capacidad máxima de usuarios actualizada a %u.\r\n", max_users);
+    send_response(fd, msg, false);
+
+    our_log(INFO, "User array resized successfully");
 }
 
 void handle_help(int fd)

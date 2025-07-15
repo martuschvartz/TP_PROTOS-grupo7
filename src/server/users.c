@@ -8,8 +8,14 @@
 #include <getopt.h>
 #include "args.h"
 
-static unsigned int cantUsers, admins;
-Tuser *users; // lista de usuarios
+// static unsigned int cantUsers, admins;
+// Tuser *users; //lista de usuarios
+
+unsigned int cantUsers = 0;
+unsigned int admins = 0;
+
+unsigned int max_users = 10; // valor inicial por defecto
+Tuser *users = NULL;
 
 int new_user(const char *name, const char *pass)
 {
@@ -32,7 +38,7 @@ int new_user(const char *name, const char *pass)
         return -1;
     }
 
-    if (cantUsers >= MAX_USERS)
+    if (cantUsers >= max_users)
     {
         StringBuilder *sb = sb_create();
         sb_append(sb, "You have reached max amount of users, we cant create ");
@@ -165,7 +171,7 @@ int delete_user(const char *name)
 
 int init_users()
 {
-    users = malloc(MAX_USERS * sizeof(Tuser));
+    users = malloc(max_users * sizeof(Tuser));
     if (users == NULL)
     {
         our_log(ERROR, "Error in malloc for 'users' array");

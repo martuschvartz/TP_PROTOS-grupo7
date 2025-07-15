@@ -15,7 +15,10 @@ typedef struct
     StringBuilder *access;
 } Tuser;
 
-extern Tuser *users; // lista de usuarios
+extern unsigned int cantUsers;
+extern unsigned int admins;
+extern unsigned int max_users;
+extern Tuser *users;
 
 int new_user(const char *name, const char *pass);
 
@@ -37,6 +40,6 @@ const Tuser *get_users();
 
 unsigned int get_user_count();
 
-StringBuilder* get_access(const char* name);
+StringBuilder *get_access(const char *name);
 
 #endif
