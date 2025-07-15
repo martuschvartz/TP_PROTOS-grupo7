@@ -14,8 +14,10 @@
 #include "args.h"
 #include "users.h"
 #include <manager.h>
+#include <getopt.h>
 
 #define DEFAULT_PORT 1081
+#define DEFAULT_HOST "127.0.0.1"
 #define BUFFER_SIZE 1024
 
 static bool done = false;
@@ -29,6 +31,15 @@ typedef struct
     int sockfd;
 } client_data;
 
+static void print_help(const char *progname)
+{
+    printf("Uso: %s [-L host] [-P port] [-h]\n", progname);
+    printf("Opciones:\n");
+    printf("  -L host     Dirección IP o hostname del servidor (default: %s)\n", DEFAULT_HOST);
+    printf("  -P port     Puerto del servidor (default: %d)\n", DEFAULT_PORT);
+    printf("  -h          Muestra esta ayuda y termina\n");
+}
+
 static void sigterm_handler(const int signal)
 {
     (void)signal;
@@ -36,18 +47,28 @@ static void sigterm_handler(const int signal)
 }
 int main(int argc, char *argv[])
 {
-    if (argc < 2 || argc > 3)
-    {
-        printf("\n Se espera: %s <ip> [puerto] \n", argv[0]);
-        return 1;
-    }
-
+    const char *host = DEFAULT_HOST;
     int port = DEFAULT_PORT;
-    if (argc >= 3)
-    {
-        port = atoi(argv[2]);
-    }
 
+    int opt;
+    while ((opt = getopt(argc, argv, "L:P:h")) != -1)
+    {
+        switch (opt)
+        {
+        case 'L':
+            host = optarg;
+            break;
+        case 'P':
+            port = atoi(optarg);
+            break;
+        case 'h':
+            print_help(argv[0]);
+            return 0;
+        default:
+            print_help(argv[0]);
+            return 1;
+        }
+    }
     /* a socket is created through call to socket() function */
     int sockfd = 0;
     if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
