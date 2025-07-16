@@ -9,7 +9,7 @@ unsigned int get_historical_connections();
 
 unsigned int get_connections();
 
-void more_bytes(unsigned int bytes);
+void more_bytes(long bytes);
 
 unsigned int get_bytes();
 

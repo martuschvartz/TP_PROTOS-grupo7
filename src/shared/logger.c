@@ -2,7 +2,7 @@
 
 
 #define SB_INITIAL_CAPACITY 64
-#define NO_LOGS_PLS 0 //Pasar a 1 si no se quiere ningun tipo de log
+#define NO_LOGS_PLS 1 //Pasar a 1 si no se quiere ningun tipo de log
 
 
 static unsigned int current_type = INFO;

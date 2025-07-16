@@ -22,8 +22,7 @@ unsigned int get_connections(){
     return cConnections;
 }
 
-void more_bytes(unsigned int b){
-    fprintf(stdout, "Agegamos bytes %d \n", b);
+void more_bytes(long b){
     bytes+=b;
 }
 

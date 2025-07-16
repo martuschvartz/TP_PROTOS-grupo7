@@ -218,7 +218,7 @@ unsigned request_write(selector_key * key) {
     }
     
     sb_append(user_sb, "\t");
-    sb_append(user_sb, (char *) data->handshake.request_parser.address.buffer);
+    sb_append(user_sb, (char *) data->handshake.request_parser.address.buffer); //TODO si no se pone socks5h se ve mal
     sb_append(user_sb, "\t");
     char port_str[6]; 
     snprintf(port_str, sizeof(port_str), "%u", data->handshake.request_parser.port);

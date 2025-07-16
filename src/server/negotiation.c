@@ -52,7 +52,7 @@ unsigned int negotiation_write(selector_key *key) {
         return SOCKS_ERROR;
     }
 
-    more_bytes((unsigned int)bytes_sent);
+    more_bytes((long)bytes_sent);
     
     buffer_read_adv(&client_data->sv_to_client, bytes_sent);
     // there are bytes to be sent yet
