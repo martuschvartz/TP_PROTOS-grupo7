@@ -61,6 +61,7 @@ typedef struct auth_parser {
     auth_status authenticated;
 
     uint8_t length;
+    uint8_t bytes_read;
 
     char uname[MAX_LENGTH + 1];
     char passwd[MAX_LENGTH + 1];
@@ -89,9 +90,9 @@ void auth_parse_length(auth_parser * ap, uint8_t length);
 /**
  * Parses and validates username/password
  * @param ap auth parser
- * @param buffer buffer that contains uname or password
+ * @param byte next byte to parse
  */
-void auth_parse_characters(auth_parser * ap, buffer * buffer);
+void auth_parse_characters(auth_parser * ap, uint8_t byte);
 
 /**
  * Checks if the authentication sub-negotiation failed

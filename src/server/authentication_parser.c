@@ -11,6 +11,7 @@ void initialize_auth_parser(auth_parser * ap) {
         ap->current_state = AUTH_PARSE_VERSION;
         ap->authenticated = ACCESS_DENIED;
         ap->length = 0;
+        ap->bytes_read = 0;
     }
 }
 
@@ -38,18 +39,17 @@ void auth_parse_length(auth_parser * ap, uint8_t length) {
 }
 
 
-void auth_parse_characters(auth_parser * ap, buffer * buffer) {
-    int i  = 0;
-    while(i < ap->length && buffer_can_read(buffer)) {
-        if (ap->current_state == AUTH_UNAME) {
-            ap->uname[i++] = buffer_read(buffer);
-            ap->uname[i] = '\0';
-        }else {
-            ap->passwd[i++] = buffer_read(buffer);
-        }
+void auth_parse_characters(auth_parser * ap, uint8_t byte) {
+    if (ap->current_state == AUTH_UNAME) {
+        ap->uname[ap->bytes_read++] = byte;
+    }else {
+        ap->passwd[ap->bytes_read++] = byte;
     }
-    ap->length = 0;
-    ap->current_state = (ap->current_state == AUTH_UNAME) ? AUTH_PLEN : AUTH_DONE;
+
+    if (ap->bytes_read == ap->length) {
+        ap->bytes_read = 0;
+        ap->current_state = (ap->current_state == AUTH_UNAME) ? AUTH_PLEN : AUTH_DONE;
+    }
 }
 
 
@@ -84,7 +84,7 @@ void auth_parse(auth_parser * ap, buffer * buffer) {
             auth_parse_length(ap, buffer_read(buffer));
         }
         else if (ap->current_state == AUTH_UNAME || ap->current_state == AUTH_PASSWD) {
-            auth_parse_characters(ap, buffer);
+            auth_parse_characters(ap, buffer_read(buffer));
         }
         else {
             return;
