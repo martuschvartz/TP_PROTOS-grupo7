@@ -215,10 +215,33 @@ unsigned request_write(selector_key * key) {
         sb_append(user_sb, ip_str);
         sb_append(user_sb, "\t");
         sb_append(user_sb, port_str);
-    }
-    
+    }    
     sb_append(user_sb, "\t");
-    sb_append(user_sb, (char *) data->handshake.request_parser.address.buffer);
+    switch (data->handshake.request_parser.atyp) {
+        case IPV4: {
+            uint8_t *ip = (uint8_t *)&data->handshake.request_parser.address.address_class.ipv4;
+            sb_append(user_sb, int_to_string(ip[0]));
+            sb_append(user_sb, ".");
+            sb_append(user_sb, int_to_string(ip[1]));
+            sb_append(user_sb, ".");
+            sb_append(user_sb, int_to_string(ip[2]));
+            sb_append(user_sb, ".");
+            sb_append(user_sb, int_to_string(ip[3]));
+            break;
+        }
+        case IPV6: {
+            char ipv6_str[INET6_ADDRSTRLEN];
+            inet_ntop(AF_INET6, &data->handshake.request_parser.address.address_class.ipv6, ipv6_str, sizeof(ipv6_str));
+            sb_append(user_sb, ipv6_str);
+            break;
+        }
+        case DN: {
+            sb_append(user_sb, data->handshake.request_parser.address.address_class.dn);
+            break;
+        }
+        default:
+            sb_append(user_sb, "There was an error while parsing the destination addr");
+    }
     sb_append(user_sb, "\t");
     char port_str[6]; 
     snprintf(port_str, sizeof(port_str), "%u", data->handshake.request_parser.port);

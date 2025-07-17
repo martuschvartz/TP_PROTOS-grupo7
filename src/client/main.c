@@ -47,7 +47,7 @@ static void sigterm_handler(const int signal)
 }
 int main(int argc, char *argv[])
 {
-    const char *host = DEFAULT_HOST;
+    // const char *host = DEFAULT_HOST;
     int port = DEFAULT_PORT;
 
     int opt;
@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
         switch (opt)
         {
         case 'L':
-            host = optarg;
+            // host = optarg;
             break;
         case 'P':
             port = atoi(optarg);

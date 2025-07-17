@@ -179,7 +179,7 @@ unsigned int copy_write(selector_key *key) {
     }
 
     ssize_t n = send(key->fd, ptr, available_read_data, MSG_NOSIGNAL);
-    more_bytes((unsigned int)n);
+    more_bytes((long)n);
     
     return handle_write_data(key, n, buffer_to_drain, source_fd, source_eof);
 }
