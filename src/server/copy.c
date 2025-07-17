@@ -45,6 +45,8 @@ static unsigned int handle_read_data(selector_key *key, ssize_t n, buffer *buffe
 
     if (!target_eof) {
         selector_set_interest(key->s, target_fd, OP_WRITE);
+        selector_key target_key = get_key_with_offset(key->s, target_fd);
+        return stm_handler_write(&data->stm, &target_key);
     }
 
     return COPY;

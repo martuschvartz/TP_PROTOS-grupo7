@@ -191,4 +191,6 @@ selector_status
 selector_notify_block(fd_selector s,
                  const int   fd);
 
+selector_key get_key_with_offset(fd_selector s, int target_fd);
+
 #endif

@@ -481,6 +481,17 @@ handle_iteration(fd_selector s) {
     }
 }
 
+selector_key get_key_with_offset(fd_selector s, int target_fd) {
+    struct item* item = s->fds + target_fd;
+    struct selector_key key = {
+        .s =  s,
+        .data = item->data,
+        .fd = item->fd
+    };
+
+    return key;
+}
+
 static void
 handle_block_notifications(fd_selector s) {
     struct selector_key key = {
